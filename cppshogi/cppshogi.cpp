@@ -44,7 +44,6 @@ inline void make_input_features(const Position& position, T1 features1, T2 featu
 	Bitboard without_pawns_bb = occupied_bb & ~pawns_bb;
 	// 利き数集計用
 	int attack_num[ColorNum][SquareNum] = {};
-
 	// 歩以外
 	FOREACH_BB(without_pawns_bb, Square sq, {
 		const Piece pc = position.piece(sq);
@@ -115,14 +114,14 @@ inline void make_input_features(const Position& position, T1 features1, T2 featu
 			p += MAX_PIECES_IN_HAND[hp];
 		}
 	}
-	// is turn
-	if (position.turn() == Black) {
-		set_features2(features2, MAX_FEATURES2_HAND_NUM - 1);
-	}
 
 	// is check
 	if (position.inCheck()) {
 		set_features2(features2, MAX_FEATURES2_HAND_NUM);
+	}
+	// is turn
+	if (position.turn() == Black) {
+		set_features2(features2, MAX_FEATURES2_HAND_NUM + 1);
 	}
 }
 
