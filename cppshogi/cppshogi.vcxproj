@@ -162,12 +162,14 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6\include;C:\Program Files\NVIDIA GPU Computing Toolkit\TensorRT-8.4.1.5\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6\lib\x64;C:\Program Files\NVIDIA GPU Computing Toolkit\TensorRT-8.4.1.5\lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>
