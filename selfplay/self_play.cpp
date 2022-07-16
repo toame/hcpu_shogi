@@ -384,7 +384,7 @@ private:
 	int pos_id;
 	int pattern;
 
-	Move best_move10;
+	Move best_move10 = Move::moveNone();
 
 	int max_playout_num;
 	int playout;
