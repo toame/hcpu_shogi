@@ -115,6 +115,10 @@ inline void make_input_features(const Position& position, T1 features1, T2 featu
 			p += MAX_PIECES_IN_HAND[hp];
 		}
 	}
+	// is turn
+	if (position.turn() == Black) {
+		set_features2(features2, MAX_FEATURES2_HAND_NUM - 1);
+	}
 
 	// is check
 	if (position.inCheck()) {

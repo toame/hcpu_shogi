@@ -254,3 +254,6 @@ ModelManifest.xml
 /dlshogi/*.pyd
 /dlshogi/*.cpp
 /dist
+/dlshogi/hcpe
+/dlshogi/hcpe3
+/dlshogi/checkpoint-001.pth
