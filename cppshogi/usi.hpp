@@ -26,6 +26,9 @@
 #include "move.hpp"
 
 const std::string DefaultStartPositionSFEN = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1";
+const std::string DefaultStartPositionSFEN_2pieces = "lnsgkgsnl/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1";
+const std::string DefaultStartPositionSFEN_4pieces = "1nsgkgsn1/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1";
+const std::string DefaultStartPositionSFEN_6pieces = "2sgkgs2/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1";
 
 struct OptionsMap;
 
