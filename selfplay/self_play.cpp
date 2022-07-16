@@ -1210,7 +1210,7 @@ void UCTSearcher::NextStep()
 	playout++;
 
 	// 低プレイアウト時の手を記録
-	if (playout >= int(playouts_level[pos_id]) && best_move10 == Move::moveNone()) {
+	if (playout >= int(playouts_level[pattern][pos_id]) && best_move10 == Move::moveNone()) {
 		const child_node_t* uct_child = root_node->child.get();
 		const auto child_num = root_node->child_num;
 
