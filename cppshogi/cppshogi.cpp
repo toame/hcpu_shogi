@@ -44,13 +44,15 @@ inline void make_input_features(const Position& position, T1 features1, T2 featu
 	Bitboard without_pawns_bb = occupied_bb & ~pawns_bb;
 	// 利き数集計用
 	int attack_num[ColorNum][SquareNum] = {};
+	int count_num = 0;
+	int bishop_num = 0;
 	// 歩以外
 	FOREACH_BB(without_pawns_bb, Square sq, {
 		const Piece pc = position.piece(sq);
 		const PieceType pt = pieceToPieceType(pc);
 		Color c = pieceToColor(pc);
 		Bitboard attacks = Position::attacksFrom(pt, c, sq, occupied_bb);
-
+		count_num++;
 		// 後手の場合、色を反転し、盤面を180度回転
 		if (turn == White) {
 			c = oppositeColor(c);
@@ -59,6 +61,7 @@ inline void make_input_features(const Position& position, T1 features1, T2 featu
 
 		// 駒の配置
 		set_features1(features1, c, pt - 1, sq);
+		if (pt == Bishop) bishop_num++;
 
 		FOREACH_BB(attacks, Square to, {
 			// 後手の場合、盤面を180度回転
@@ -86,7 +89,7 @@ inline void make_input_features(const Position& position, T1 features1, T2 featu
 		FOREACH_BB(pawns_bb2, Square sq, {
 			// 後手の場合、盤面を180度回転
 			if (turn == White) sq = SQ99 - sq;
-
+			count_num++;
 			// 駒の配置
 			set_features1(features1, c, Pawn - 1, sq);
 
@@ -107,9 +110,11 @@ inline void make_input_features(const Position& position, T1 features1, T2 featu
 		int p = 0;
 		for (HandPiece hp = HPawn; hp < HandPieceNum; ++hp) {
 			u32 num = hand.numOf(hp);
+			count_num += num;
 			if (num >= MAX_PIECES_IN_HAND[hp]) {
 				num = MAX_PIECES_IN_HAND[hp];
 			}
+			if (hp == HBishop) bishop_num++;
 			set_features2(features2, c2, p, num);
 			p += MAX_PIECES_IN_HAND[hp];
 		}
@@ -123,6 +128,16 @@ inline void make_input_features(const Position& position, T1 features1, T2 featu
 	if (position.turn() == Black) {
 		set_features2(features2, MAX_FEATURES2_HAND_NUM + 1);
 	}
+
+	// is kind
+	if (count_num == 34) set_features2(features2, MAX_FEATURES2_HAND_NUM + 2);
+	else if (count_num == 36) set_features2(features2, MAX_FEATURES2_HAND_NUM + 3);
+	else if (count_num == 38 && bishop_num == 2) set_features2(features2, MAX_FEATURES2_HAND_NUM + 4); //飛車香落ち
+	else if (count_num == 38) set_features2(features2, MAX_FEATURES2_HAND_NUM + 5);
+	else if (count_num == 39 && bishop_num == 2) set_features2(features2, MAX_FEATURES2_HAND_NUM + 6); //飛車落ち
+	else if (count_num == 39) set_features2(features2, MAX_FEATURES2_HAND_NUM + 7); // 角落ち
+	else if (count_num == 40) set_features2(features2, MAX_FEATURES2_HAND_NUM + 8);
+	
 }
 
 void make_input_features(const Position& position, features1_t features1, features2_t features2) {
