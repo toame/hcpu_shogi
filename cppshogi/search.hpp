@@ -54,6 +54,7 @@ struct Searcher {
 // 入玉勝ちかどうかを判定
 template <bool CheckInCheck = true>
 bool nyugyoku(const Position& pos) {
+	// return false;
 	// CSA ルールでは、一 から 六 の条件を全て満たすとき、入玉勝ち宣言が出来る。
 	// 判定が高速に出来るものから順に判定していく事にする。
 
@@ -94,11 +95,39 @@ bool nyugyoku(const Position& pos) {
 		+ hand.numOf<HPawn>() + hand.numOf<HLance>() + hand.numOf<HKnight>()
 		+ hand.numOf<HSilver>() + hand.numOf<HGold>()
 		+ (ownBigPiecesCount + hand.numOf<HRook>() + hand.numOf<HBishop>()) * 5;
+
+	// 合計を数える
+	const Bitboard BlackField = inFrontMask<Black, Rank4>();
+	const Bitboard WhiteField = inFrontMask<White, Rank6>();
+
+	const int BlackBigPiecesCount = (pos.bbOf(Rook, Dragon, Bishop, Horse) & pos.bbOf(Color(Black))).popCount();
+	const int WhiteBigPiecesCount = (pos.bbOf(Rook, Dragon, Bishop, Horse) & pos.bbOf(Color(White))).popCount();
+
+	const int BlackPiecesCount = (pos.bbOf(Color(Black))).popCount() - 1;
+	const int WhitePiecesCount = (pos.bbOf(Color(White))).popCount() - 1;
+
+	const int BlackSmallPiecesCount = BlackPiecesCount - BlackBigPiecesCount;
+	const int WhiteSmallPiecesCount = WhitePiecesCount - WhiteBigPiecesCount;
+
+	const Hand Blackhand = pos.hand(Color(Black));
+	const Hand Whitehand = pos.hand(Color(White));
+
+	const int valB = BlackSmallPiecesCount
+		+ Blackhand.numOf<HPawn>() + Blackhand.numOf<HLance>() + Blackhand.numOf<HKnight>()
+		+ Blackhand.numOf<HSilver>() + Blackhand.numOf<HGold>()
+		+ (BlackBigPiecesCount + Blackhand.numOf<HRook>() + Blackhand.numOf<HBishop>()) * 5;
+	const int valW = WhiteSmallPiecesCount
+		+ Whitehand.numOf<HPawn>() + Whitehand.numOf<HLance>() + Whitehand.numOf<HKnight>()
+		+ Whitehand.numOf<HSilver>() + Whitehand.numOf<HGold>()
+		+ (WhiteBigPiecesCount + Whitehand.numOf<HRook>() + Whitehand.numOf<HBishop>()) * 5;
+
+
+
 #if defined LAW_24
 	if (val < 31)
 		return false;
 #else
-	if (val < (us == Black ? 28 : 27))
+	if (val < (us == Black ? 28 : (valB + valW - 27)))
 		return false;
 #endif
 
