@@ -42,8 +42,8 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {300, 200, 100}, {200, 100, 50}};
-float temperature_level[2][3] = { {0.8f, 0.7f, 0.7f}, {0.6f, 0.6f, 0.5f} };
+float playouts_level[2][3] = { {600, 400, 250}, {250, 150, 100}};
+float temperature_level[2][3] = { {0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, 0.5f} };
 float search_level[3] = {0.57f, 0.59f, 0.61f};
 
 void sigint_handler(int signum)
@@ -358,7 +358,7 @@ public:
 private:
 	float UctSearch(Position* pos, child_node_t* parent, uct_node_t* current, visitor_t& visitor);
 	int SelectMaxUcbChild(child_node_t* parent, uct_node_t* current);
-	bool InterruptionCheck(const int playout_count, const int extension_times);
+	bool InterruptionCheck(const int playout_count, const int extension_times, Color color);
 	void NextPly(const Move move);
 	void NextGame();
 
@@ -933,12 +933,13 @@ UCTSearcherGroup::QueuingNode(const Position *pos, uct_node_t* node, float* valu
 //  探索打ち止めの確認  //
 //////////////////////////
 bool
-UCTSearcher::InterruptionCheck(const int playout_count, const int extension_times)
+UCTSearcher::InterruptionCheck(const int playout_count, const int extension_times, Color color)
 {
 	int max_index = 0;
 	int max = 0, second = 0;
 	const int child_num = root_node->child_num;
-	const int rest = max_playout_num - playout_count;
+	const int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 2)) : max_playout_num * 1.1;
+	const int rest = limit_playout - playout_count;
 	const child_node_t* uct_child = root_node->child.get();
 
 	// 探索回数が最も多い手と次に多い手を求める
@@ -952,6 +953,7 @@ UCTSearcher::InterruptionCheck(const int playout_count, const int extension_time
 			second = uct_child[i].move_count;
 		}
 	}
+	if (max <= 3) return false;
 
 	// 詰みが見つかった場合は探索を打ち切る
 	if (uct_child[max_index].IsLose())
@@ -1042,7 +1044,7 @@ void UCTSearcher::Playout(visitor_t& visitor)
 				setPosition(*pos_root, hcp);
 
 				pos_id = (*mt_64)() % 3;
-				pattern = (*mt_64)() % 2;
+				pattern = (*mt_64)() % 1;
 				best_move10 = Move::moveNone();
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
 				if (pos_id == 1) pos_root = new Position(DefaultStartPositionSFEN_4pieces, s.thisptr);
@@ -1098,7 +1100,7 @@ void UCTSearcher::Playout(visitor_t& visitor)
 			else if (root_node->child_num == 1) {
 				// 1手しかないときは、その手を指して次の手番へ
 				const Move move = root_node->child[0].move;
-				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} skip:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), move.toUSI());
+				//SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} skip:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), move.toUSI());
 				AddRecord(move, 0, false);
 				NextPly(move);
 				continue;
@@ -1239,7 +1241,7 @@ void UCTSearcher::NextStep()
 	}
 
 	// 探索終了判定
-	if (InterruptionCheck(playout, (ply > RANDOM_MOVE) ? EXTENSION_TIMES : 0) && best_move10 != Move::moveNone()) {
+	if (InterruptionCheck(playout, (ply > RANDOM_MOVE) ? EXTENSION_TIMES : 0, pos_root->turn()) && best_move10 != Move::moveNone()) {
 		// 平均プレイアウト数を計測
 		sum_playouts += playout;
 		++sum_nodes;
@@ -1369,11 +1371,12 @@ void UCTSearcher::NextStep()
 				best_wp = 0.0f;
 			}
 			best_move = uct_child[select_index].move;
-			best_move = best_move10;
-			best_move10 = Move::moveNone();
+			if(pos_root->turn() == Black)
+				best_move = best_move10;
+			
 			if(grp->group_id == 0 && id == 0)
-				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} bestmove:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_wp);
-
+				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} bestmove:{} bestmove10:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_move10.toUSI(), best_wp);
+			best_move10 = Move::moveNone();
 			{
 				// 勝率が閾値を超えた場合、ゲーム終了
 				const float winrate = (best_wp - 0.5f) * 2.0f;
@@ -1475,7 +1478,19 @@ void UCTSearcher::NextPly(const Move move)
 
 void UCTSearcher::NextGame()
 {
-	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} gameResult:{}", grp->gpu_id, grp->group_id, id, ply, gameResult);
+	static int gameResult_count[2][3][3];
+	gameResult_count[pattern][pos_id][gameResult]++;
+	const float r = 0.001f;
+	if (gameResult == WhiteWin) {
+		temperature_level[pattern][pos_id] -= r;
+	}
+	if (gameResult == BlackWin) {
+		temperature_level[pattern][pos_id] += r;
+	}
+	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} gameResult:{} black_win:{} white_win:{} pattern:{} pos_id:{} playout_level:{}, temeperature_level:{}",
+		grp->gpu_id, grp->group_id, id, ply, gameResult, gameResult_count[pattern][pos_id][BlackWin], gameResult_count[pattern][pos_id][WhiteWin], pattern, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id]);
+	
+	
 
 	// 局面出力
 	if (ply >= MIN_MOVE && records.size() > 0) {
