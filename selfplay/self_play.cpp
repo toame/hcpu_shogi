@@ -1050,10 +1050,11 @@ void UCTSearcher::Playout(visitor_t& visitor)
 				pos_id = (*mt_64)() % 3;
 				pattern = (*mt_64)() % 1;
 				best_move10 = Move::moveNone();
-				if (pos_id == 0) hcp = hcp_2pieces;
-				if (pos_id == 1) hcp = hcp_4pieces;
-				if (pos_id == 2) hcp = hcp_6pieces;
-				setPosition(*pos_root, hcp);
+				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
+				if (pos_id == 1) pos_root = new Position(DefaultStartPositionSFEN_4pieces, s.thisptr);
+				if (pos_id == 2) pos_root = new Position(DefaultStartPositionSFEN_6pieces, s.thisptr);
+				hcp = pos_root->toHuffmanCodedPos();
+				//setPosition(*pos_root, hcp);
 				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN());
 
 				records.clear();
