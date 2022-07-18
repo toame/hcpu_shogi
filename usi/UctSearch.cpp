@@ -392,9 +392,9 @@ private:
 	// UCT探索
 	void ParallelUctSearch();
 	//  UCT探索(1回の呼び出しにつき, 1回の探索)
-	float UctSearch(Position* pos, child_node_t* parent, uct_node_t* current, visitor_t& visitor);
+	float UctSearch(Position* pos, child_node_t* parent, uct_node_t* current, visitor_t& visitor, Color parent_color);
 	// UCB値が最大の子ノードを返す
-	int SelectMaxUcbChild(child_node_t* parent, uct_node_t* current);
+	int SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* current, Color parent_color);
 	// ノードをキューに追加
 	void QueuingNode(const Position* pos, uct_node_t* node, float* value_win);
 	// ノードを評価
@@ -1189,7 +1189,7 @@ UCTSearcher::ParallelUctSearch()
 			
 			// 1回プレイアウトする
 			visitor_pool[i].trajectories.clear();
-			const float result = UctSearch(&pos, nullptr, current_root, visitor_pool[i]);
+			const float result = UctSearch(&pos, nullptr, current_root, visitor_pool[i], pos.turn());
 
 			if (result != DISCARDED) {
 				// 探索回数を1回増やす
@@ -1304,7 +1304,7 @@ UCTSearcher::ParallelUctSearch()
 //  1回の呼び出しにつき, 1プレイアウトする    //
 //////////////////////////////////////////////
 float
-UCTSearcher::UctSearch(Position *pos, child_node_t* parent, uct_node_t* current, visitor_t& visitor)
+UCTSearcher::UctSearch(Position *pos, child_node_t* parent, uct_node_t* current, visitor_t& visitor, Color parent_color)
 {
 	float result;
 	child_node_t *uct_child = current->child.get();
@@ -1316,7 +1316,7 @@ UCTSearcher::UctSearch(Position *pos, child_node_t* parent, uct_node_t* current,
 	// 子ノードへのポインタ配列が初期化されていない場合、初期化する
 	if (!current->child_nodes) current->InitChildNodes();
 	// UCB値最大の手を求める
-	const unsigned int next_index = SelectMaxUcbChild(parent, current);
+	const unsigned int next_index = SelectMaxUcbChild(pos, parent, current, parent_color);
 	// 選んだ手を着手
 	StateInfo st;
 	pos->doMove(uct_child[next_index].move, st);
@@ -1465,7 +1465,7 @@ UCTSearcher::UctSearch(Position *pos, child_node_t* parent, uct_node_t* current,
 		}
 		else {
 			// 手番を入れ替えて1手深く読む
-			result = UctSearch(pos, &uct_child[next_index], next_node, visitor);
+			result = UctSearch(pos, &uct_child[next_index], next_node, visitor, parent_color);
 		}
 	}
 
@@ -1487,7 +1487,7 @@ UCTSearcher::UctSearch(Position *pos, child_node_t* parent, uct_node_t* current,
 //  UCBが最大となる子ノードのインデックスを返す関数  //
 /////////////////////////////////////////////////////
 int
-UCTSearcher::SelectMaxUcbChild(child_node_t* parent, uct_node_t* current)
+UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* current, Color parent_color)
 {
 	const child_node_t *uct_child = current->child.get();
 	const int child_num = current->child_num;
@@ -1499,7 +1499,7 @@ UCTSearcher::SelectMaxUcbChild(child_node_t* parent, uct_node_t* current)
 
 	max_value = -FLT_MAX;
 
-	const float sqrt_sum = sqrtf(static_cast<const float>(sum));
+	const float sqrt_sum = (parent_color == White && pos->turn() == Black) ? sqrtf((float)sum) : powf((float)sum, 0.55f);
 	const float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;

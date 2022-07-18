@@ -814,7 +814,7 @@ UCTSearcher::UctSearch(Position* pos, child_node_t* parent, uct_node_t* current,
 		}
 		else {
 			// 手番を入れ替えて1手深く読む
-			result = UctSearch(pos, &uct_child[next_index], next_node, visitor, pos->turn());
+			result = UctSearch(pos, &uct_child[next_index], next_node, visitor, parent_color);
 		}
 	}
 
