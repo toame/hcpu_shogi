@@ -42,7 +42,7 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {520, 350, 170}, {350, 200, 100}};
+float playouts_level[2][3] = { {600, 450, 200}, {350, 250, 100}};
 float temperature_level[2][3] = { {0.6f, 0.6f, 0.7f}, {0.45f, 0.45f, 0.5f} };
 float search_level[3] = {0.55f, 0.57f, 0.59f};
 
