@@ -42,8 +42,8 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {370, 230, 150}, {250, 150, 100}};
-float temperature_level[2][3] = { {0.6f, 0.6f, 0.8f}, {0.5f, 0.5f, 0.5f} };
+float playouts_level[2][3] = { {520, 350, 170}, {350, 200, 100}};
+float temperature_level[2][3] = { {0.6f, 0.6f, 0.7f}, {0.45f, 0.45f, 0.5f} };
 float search_level[3] = {0.55f, 0.57f, 0.59f};
 
 void sigint_handler(int signum)
@@ -942,7 +942,7 @@ UCTSearcher::InterruptionCheck(const int playout_count, const int extension_time
 	int max_index = 0;
 	int max = 0, second = 0;
 	const int child_num = root_node->child_num;
-	const int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 2)) : max_playout_num * 1.1;
+	const int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 1.4)) : max_playout_num * 1.5;
 	const int rest = limit_playout - playout_count;
 	const child_node_t* uct_child = root_node->child.get();
 
@@ -1048,7 +1048,7 @@ void UCTSearcher::Playout(visitor_t& visitor)
 				
 
 				pos_id = (*mt_64)() % 3;
-				pattern = (*mt_64)() % 1;
+				pattern = (*mt_64)() % 2;
 				best_move10 = Move::moveNone();
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
 				if (pos_id == 1) pos_root = new Position(DefaultStartPositionSFEN_4pieces, s.thisptr);
