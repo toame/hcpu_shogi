@@ -43,8 +43,8 @@ int threads = 2;
 volatile sig_atomic_t stopflg = false;
 
 float playouts_level[2][3] = { {370, 230, 150}, {250, 150, 100}};
-float temperature_level[2][3] = { {0.5f, 0.5f, 0.7f}, {0.5f, 0.5f, 0.5f} };
-float search_level[3] = {0.57f, 0.59f, 0.61f};
+float temperature_level[2][3] = { {0.6f, 0.6f, 0.8f}, {0.5f, 0.5f, 0.5f} };
+float search_level[3] = {0.55f, 0.57f, 0.59f};
 
 void sigint_handler(int signum)
 {
@@ -361,7 +361,7 @@ public:
 
 private:
 	float UctSearch(Position* pos, child_node_t* parent, uct_node_t* current, visitor_t& visitor);
-	int SelectMaxUcbChild(child_node_t* parent, uct_node_t* current);
+	int SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* current);
 	bool InterruptionCheck(const int playout_count, const int extension_times, Color color);
 	void NextPly(const Move move);
 	void NextGame();
@@ -687,7 +687,7 @@ UCTSearcher::UctSearch(Position* pos, child_node_t* parent, uct_node_t* current,
 	// 子ノードへのポインタ配列が初期化されていない場合、初期化する
 	if (!current->child_nodes) current->InitChildNodes();
 	// UCB値最大の手を求める
-	const unsigned int next_index = SelectMaxUcbChild(parent, current);
+	const unsigned int next_index = SelectMaxUcbChild(pos, parent, current);
 	// 選んだ手を着手
 	StateInfo st;
 	pos->doMove(uct_child[next_index].move, st);
@@ -831,7 +831,7 @@ UCTSearcher::UctSearch(Position* pos, child_node_t* parent, uct_node_t* current,
 //  UCBが最大となる子ノードのインデックスを返す関数  //
 /////////////////////////////////////////////////////
 int
-UCTSearcher::SelectMaxUcbChild(child_node_t* parent, uct_node_t* current)
+UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* current)
 {
 	const child_node_t* uct_child = current->child.get();
 	const int child_num = current->child_num;
@@ -843,7 +843,7 @@ UCTSearcher::SelectMaxUcbChild(child_node_t* parent, uct_node_t* current)
 
 	max_value = max_value_nonoise = -FLT_MAX;
 
-	const float sqrt_sum = sqrtf((float)sum);
+	const float sqrt_sum = (pos->turn() == White) ? sqrtf((float)sum) : powf((float)sum, search_level[pos_id]);
 	const float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
