@@ -1307,16 +1307,16 @@ void UCTSearcher::NextStep()
 			vector<double> probabilities;
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
-			const int add = (pos_root->turn() == White) ? 10 : 0;
-			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / 20.0)));
-			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - max(100.0f, (500.0f - (step + add) * 25.0f)));
+			const int add = (pos_root->turn() == White) ? 12 : 0;
+			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / 22.0)));
+			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - max(100.0f, (550.0f - (step + add) * 25.0f)));
 			const float reciprocal_temperature = 1.0f / temperature;
 			for (int i = 0; i < child_num; i++) {
 				if (sorted_uct_childs[i]->move_count == 0) break;
 				const auto win = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
 				if (i > 0 && win < cutoff_threshold) break;
 
-				const auto probability = std::pow(max(1e-9f, sorted_uct_childs[i]->move_count - 2.0f), reciprocal_temperature);
+				const auto probability = std::pow(max(1e-9f, sorted_uct_childs[i]->move_count - 1.4f), reciprocal_temperature);
 				probabilities.emplace_back(probability);
 				SPDLOG_TRACE(logger, "gpu_id:{} group_id:{} id:{} {}:{} move_count:{} nnrate:{} win_rate:{} probability:{}",
 					grp->gpu_id, grp->group_id, id, i, sorted_uct_childs[i]->move.toUSI(), sorted_uct_childs[i]->move_count,
@@ -1389,7 +1389,19 @@ void UCTSearcher::NextStep()
 			if(pos_root->turn() == Black)
 				best_move = best_move10;
 			if (ply == RANDOM_MOVE + 1) {
-				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp);
+				
+				static int count_distribution[3][7];
+				if (best_wp <= 0.25) count_distribution[pos_id][0]++;
+				if (0.25 < best_wp && best_wp <= 0.35) count_distribution[pos_id][1]++;
+				if (0.35 < best_wp && best_wp < 0.45) count_distribution[pos_id][2]++;
+				if (0.45 < best_wp && best_wp < 0.55) count_distribution[pos_id][3]++;
+				if (0.55 < best_wp && best_wp < 0.65) count_distribution[pos_id][4]++;
+				if (0.65 < best_wp && best_wp < 0.75) count_distribution[pos_id][5]++;
+				if (0.75 < best_wp) count_distribution[pos_id][6]++;
+				int a[7];
+				for (int c = 0; c < 7; c++) a[c] = count_distribution[pos_id][c];
+				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: {} {} {} {} {} {} {}", 
+					grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
 			}
 			if(grp->group_id == 0 && id == 0)
 				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} bestmove:{} bestmove10:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_move10.toUSI(), best_wp);
