@@ -43,7 +43,7 @@ int threads = 2;
 volatile sig_atomic_t stopflg = false;
 
 float playouts_level[2][3] = { {650, 450, 250}, {250, 110, 30}};
-float temperature_level[2][3] = { {0.72f, 0.72f, 0.95f}, {0.45f, 0.45f, 0.85f} };
+float temperature_level[2][3] = { {0.60f, 0.60f, 0.70f}, {0.45f, 0.45f, 0.85f} };
 float search_level[3] = {0.57f, 0.59f, 0.61f};
 
 void sigint_handler(int signum)
@@ -1310,16 +1310,16 @@ void UCTSearcher::NextStep()
 			int add;
 			if (pos_id == 0) add = ((pos_root->turn() == White) ? 6 : 0);
 			if (pos_id == 1) add = ((pos_root->turn() == White) ? 8 : -2);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 12 : -8);
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -10);
 			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / 22.0)));
-			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - max(100.0f, (550.0f - (step + add) * 25.0f)));
+			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - min(550.0f, max(100.0f, (550.0f - (step + add) * 25.0f))));
 			const float reciprocal_temperature = 1.0f / temperature;
 			for (int i = 0; i < child_num; i++) {
 				if (sorted_uct_childs[i]->move_count == 0) break;
 				const auto win = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
 				if (i > 0 && win < cutoff_threshold) break;
 
-				const auto probability = std::pow(max(1e-9f, sorted_uct_childs[i]->move_count - 1.4f), reciprocal_temperature);
+				const auto probability = std::pow(max(1e-9f, sorted_uct_childs[i]->move_count - 1.5f), reciprocal_temperature);
 				probabilities.emplace_back(probability);
 				SPDLOG_TRACE(logger, "gpu_id:{} group_id:{} id:{} {}:{} move_count:{} nnrate:{} win_rate:{} probability:{}",
 					grp->gpu_id, grp->group_id, id, i, sorted_uct_childs[i]->move.toUSI(), sorted_uct_childs[i]->move_count,
@@ -1392,7 +1392,6 @@ void UCTSearcher::NextStep()
 			if(pos_root->turn() == Black)
 				best_move = best_move10;
 			if (ply == RANDOM_MOVE + 1) {
-				
 				static int count_distribution[3][7];
 				if (best_wp <= 0.311) count_distribution[pos_id][0]++;
 				if (0.311 < best_wp && best_wp <= 0.371) count_distribution[pos_id][1]++;
@@ -1403,8 +1402,9 @@ void UCTSearcher::NextStep()
 				if (0.689 < best_wp) count_distribution[pos_id][6]++;
 				int a[7];
 				for (int c = 0; c < 7; c++) a[c] = count_distribution[pos_id][c];
-				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: {} {} {} {} {} {} {}", 
-					grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+				if (grp->group_id == 0)
+					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: {} {} {} {} {} {} {}", 
+						grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
 			}
 			if(grp->group_id == 0 && id == 0)
 				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} bestmove:{} bestmove10:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_move10.toUSI(), best_wp);
