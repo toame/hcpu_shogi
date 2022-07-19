@@ -1393,13 +1393,13 @@ void UCTSearcher::NextStep()
 				best_move = best_move10;
 			if (ply == RANDOM_MOVE + 1) {
 				static int count_distribution[3][7];
-				if (best_wp <= 0.311) count_distribution[pos_id][0]++;
-				if (0.311 < best_wp && best_wp <= 0.371) count_distribution[pos_id][1]++;
-				if (0.371 < best_wp && best_wp <= 0.434) count_distribution[pos_id][2]++;
-				if (0.434 < best_wp && best_wp <= 0.566) count_distribution[pos_id][3]++;
-				if (0.566 < best_wp && best_wp <= 0.629) count_distribution[pos_id][4]++;
-				if (0.629 < best_wp && best_wp <= 0.689) count_distribution[pos_id][5]++;
-				if (0.689 < best_wp) count_distribution[pos_id][6]++;
+				if (best_wp <= 0.340) count_distribution[pos_id][0]++;
+				if (0.340 < best_wp && best_wp <= 0.402) count_distribution[pos_id][1]++; // -500 ~ -300
+				if (0.402 < best_wp && best_wp <= 0.467) count_distribution[pos_id][2]++; // -300 ~ -100
+				if (0.467 < best_wp && best_wp <= 0.533) count_distribution[pos_id][3]++; // -100 ~ 100
+				if (0.533 < best_wp && best_wp <= 0.598) count_distribution[pos_id][4]++;
+				if (0.598 < best_wp && best_wp <= 0.660) count_distribution[pos_id][5]++;
+				if (0.660 < best_wp) count_distribution[pos_id][6]++;
 				int a[7];
 				for (int c = 0; c < 7; c++) a[c] = count_distribution[pos_id][c];
 				if (grp->group_id == 0)
