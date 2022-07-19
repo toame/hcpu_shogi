@@ -1295,11 +1295,14 @@ void UCTSearcher::NextStep()
 			const auto max_move_count_child = sorted_uct_childs[0];
 			const int step = (ply - 1) / 2;
 			float random_cutoff = std::max(0.0f, RANDOM_CUTOFF - RANDOM_CUTOFF_DROP * step) * (pos_root->turn() == White) ? 0.4f : 1.0f;
-			if (abs(max_move_count_child->win / max_move_count_child->move_count - 0.5f) > 0.2f) random_cutoff *= 0.5f;
 			const auto cutoff_threshold = max_move_count_child->win / max_move_count_child->move_count - random_cutoff;
 			vector<double> probabilities;
 			probabilities.reserve(child_num);
-			const float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
+			float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
+			if (abs(max_move_count_child->win / max_move_count_child->move_count - 0.5f) > 0.2f) {
+				random_cutoff *= 0.5f;
+				temperature *= 0.7f;
+			}
 			const float reciprocal_temperature = 1.0f / temperature;
 			for (int i = 0; i < child_num; i++) {
 				if (sorted_uct_childs[i]->move_count == 0) break;
@@ -1307,7 +1310,7 @@ void UCTSearcher::NextStep()
 				const auto win = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
 				if (win < cutoff_threshold) break;
 
-				const auto probability = std::pow(max(0.00001f, sorted_uct_childs[i]->move_count - 1.5f), reciprocal_temperature);
+				const auto probability = std::pow(max(1e-9f, sorted_uct_childs[i]->move_count - 2.0f), reciprocal_temperature);
 				probabilities.emplace_back(probability);
 				SPDLOG_TRACE(logger, "gpu_id:{} group_id:{} id:{} {}:{} move_count:{} nnrate:{} win_rate:{} probability:{}",
 					grp->gpu_id, grp->group_id, id, i, sorted_uct_childs[i]->move.toUSI(), sorted_uct_childs[i]->move_count,
