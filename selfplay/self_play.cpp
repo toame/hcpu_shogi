@@ -1306,7 +1306,7 @@ void UCTSearcher::NextStep()
 				const auto win = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
 				if (win < cutoff_threshold) break;
 
-				const auto probability = std::pow(sorted_uct_childs[i]->move_count, reciprocal_temperature);
+				const auto probability = std::pow(max(0.00001f, sorted_uct_childs[i]->move_count - 1.5f), reciprocal_temperature);
 				probabilities.emplace_back(probability);
 				SPDLOG_TRACE(logger, "gpu_id:{} group_id:{} id:{} {}:{} move_count:{} nnrate:{} win_rate:{} probability:{}",
 					grp->gpu_id, grp->group_id, id, i, sorted_uct_childs[i]->move.toUSI(), sorted_uct_childs[i]->move_count,
