@@ -236,13 +236,13 @@ inline s16 value_to_score(const float value) {
 }
 
 // 価値(勝率)から評価値に変換
-inline float score_to_value(const float score) {
+inline float score_to_value(const int score) {
 	if (score >= 10000)
 		return 1.0f;
-	else if (score <= -1.0f)
+	else if (score <= -10000)
 		return 0.0f;
 	else
-		return 1.0f / (1.0f + exp(-score / 756.0864962951762f));
+		return 1.0f / (1.0f + expf(-score / 756.0864962951762f));
 }
 
 // 詰み探索スロット
@@ -1307,12 +1307,11 @@ void UCTSearcher::NextStep()
 			vector<double> probabilities;
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
-			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(ply / 20.0)) * (pos_root->turn() == White) ? 0.8f : 1.0f;
+			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(ply / 20.0)) * ((pos_root->turn() == White) ? 0.8f : 1.0f);
 			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - max(100.0f, (400.0f - step * 30.0f)));
 			const float reciprocal_temperature = 1.0f / temperature;
 			for (int i = 0; i < child_num; i++) {
 				if (sorted_uct_childs[i]->move_count == 0) break;
-
 				const auto win = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
 				if (i > 0 && win < cutoff_threshold) break;
 
