@@ -853,7 +853,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 	max_value = max_value_nonoise = -FLT_MAX;
 
-	const float sqrt_sum = (parent_color == White && pos->turn() == Black) ? sqrtf((float)sum) : powf((float)sum, search_level[pos_id]);
+	const float sqrt_sum = (parent_color == White && pos->turn() == Black) ? powf((float)sum, search_level[pos_id]) : sqrtf((float)sum);
 	const float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
@@ -1308,11 +1308,11 @@ void UCTSearcher::NextStep()
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
 			int add;
-			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -1);
-			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -3);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 22 : -10);
+			if (pos_id == 0) add = ((pos_root->turn() == White) ? 6 : 0);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 8 : -2);
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -8);
 			float r = 22;
-			if (pos_id == 2 && pos_root->turn() == Black) r = 30;
+			if (pos_id == 2 && pos_root->turn() == Black) r = 24;
 			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / r)));
 			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - min(480.0f, max(100.0f, (360.0f - (step + add) * 18.0f))));
 			const float reciprocal_temperature = 1.0f / temperature;
