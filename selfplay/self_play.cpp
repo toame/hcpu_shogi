@@ -1307,8 +1307,9 @@ void UCTSearcher::NextStep()
 			vector<double> probabilities;
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
-			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(ply / 20.0)) * ((pos_root->turn() == White) ? 0.8f : 1.0f);
-			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - max(100.0f, (400.0f - step * 30.0f)));
+			const int add = (pos_root->turn() == White) ? 10 : 0;
+			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / 20.0)));
+			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - max(100.0f, (500.0f - (step + add) * 25.0f)));
 			const float reciprocal_temperature = 1.0f / temperature;
 			for (int i = 0; i < child_num; i++) {
 				if (sorted_uct_childs[i]->move_count == 0) break;
