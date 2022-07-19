@@ -1378,7 +1378,9 @@ void UCTSearcher::NextStep()
 			best_move = uct_child[select_index].move;
 			if(pos_root->turn() == Black)
 				best_move = best_move10;
-			
+			if (ply == RANDOM_MOVE + 1) {
+				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp);
+			}
 			if(grp->group_id == 0 && id == 0)
 				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} bestmove:{} bestmove10:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_move10.toUSI(), best_wp);
 			best_move10 = Move::moveNone();
@@ -1395,7 +1397,7 @@ void UCTSearcher::NextStep()
 					return;
 				}
 			}
-
+			
 			// 局面追加
 			AddRecord(best_move, value_to_score(best_wp), true);
 		}
