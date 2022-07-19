@@ -1294,7 +1294,7 @@ void UCTSearcher::NextStep()
 			// 訪問数が最大のノードの価値の一定割合以下は除外
 			const auto max_move_count_child = sorted_uct_childs[0];
 			const int step = (ply - 1) / 2;
-			const float random_cutoff = std::max(0.0f, RANDOM_CUTOFF - RANDOM_CUTOFF_DROP * step);
+			const float random_cutoff = std::max(0.0f, RANDOM_CUTOFF - RANDOM_CUTOFF_DROP * step) * (pos_root->turn() == White) ? 0.4f : 1.0f;
 			const auto cutoff_threshold = max_move_count_child->win / max_move_count_child->move_count - random_cutoff;
 			vector<double> probabilities;
 			probabilities.reserve(child_num);
