@@ -235,6 +235,16 @@ inline s16 value_to_score(const float value) {
 		return s16(-logf(1.0f / value - 1.0f) * 756.0864962951762f);
 }
 
+// 価値(勝率)から評価値に変換
+inline float score_to_value(const float score) {
+	if (score >= 10000)
+		return 1.0f;
+	else if (score <= -1.0f)
+		return 0.0f;
+	else
+		return 1.0f / (1.0f + exp(-score / 756.0864962951762f));
+}
+
 // 詰み探索スロット
 struct MateSearchEntry {
 	Position *pos;
@@ -942,7 +952,8 @@ UCTSearcher::InterruptionCheck(const int playout_count, const int extension_time
 	int max_index = 0;
 	int max = 0, second = 0;
 	const int child_num = root_node->child_num;
-	const int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 1.2)) : max_playout_num * 1.5;
+	int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 1.2)) : max_playout_num * 1.5;
+	if (extension_times > 0) limit_playout = max(300, limit_playout);
 	const int rest = limit_playout - playout_count;
 	const child_node_t* uct_child = root_node->child.get();
 
@@ -1290,25 +1301,20 @@ void UCTSearcher::NextStep()
 			for (int i = 0; i < child_num; i++)
 				sorted_uct_childs.emplace_back(&uct_child[i]);
 			std::stable_sort(sorted_uct_childs.begin(), sorted_uct_childs.end(), compare_child_node_ptr_descending);
-
+			const int step = (ply - 1) / 2;
 			// 訪問数が最大のノードの価値の一定割合以下は除外
 			const auto max_move_count_child = sorted_uct_childs[0];
-			const int step = (ply - 1) / 2;
-			float random_cutoff = std::max(0.0f, RANDOM_CUTOFF - RANDOM_CUTOFF_DROP * step) * (pos_root->turn() == White) ? 0.4f : 1.0f;
-			const auto cutoff_threshold = max_move_count_child->win / max_move_count_child->move_count - random_cutoff;
 			vector<double> probabilities;
 			probabilities.reserve(child_num);
-			float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
-			if (abs(max_move_count_child->win / max_move_count_child->move_count - 0.5f) > 0.2f) {
-				random_cutoff *= 0.5f;
-				temperature *= 0.7f;
-			}
+			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
+			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(ply / 20.0)) * (pos_root->turn() == White) ? 0.8f : 1.0f;
+			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - max(100.0f, (400.0f - step * 30.0f)));
 			const float reciprocal_temperature = 1.0f / temperature;
 			for (int i = 0; i < child_num; i++) {
 				if (sorted_uct_childs[i]->move_count == 0) break;
 
 				const auto win = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
-				if (win < cutoff_threshold) break;
+				if (i > 0 && win < cutoff_threshold) break;
 
 				const auto probability = std::pow(max(1e-9f, sorted_uct_childs[i]->move_count - 2.0f), reciprocal_temperature);
 				probabilities.emplace_back(probability);
@@ -1322,7 +1328,7 @@ void UCTSearcher::NextStep()
 			best_move = sorted_uct_childs[sorted_select_index]->move;
 			best_wp = sorted_uct_childs[sorted_select_index]->win / sorted_uct_childs[sorted_select_index]->move_count;
 			if (grp->group_id == 0 && id == 0)
-				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} random_move:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_wp);
+				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} temperature:{} cutoff_threshold:{} random_move:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), temperature, cutoff_threshold, best_move.toUSI(), best_wp);
 
 			// 局面追加
 			if (TRAIN_RANDOM)
