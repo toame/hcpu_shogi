@@ -42,7 +42,7 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {650, 450, 250}, {350, 170, 40}};
+float playouts_level[2][3] = { {650, 450, 250}, {370, 180, 40}};
 float temperature_level[2][3] = { {0.60f, 0.58f, 0.70f}, {0.45f, 0.45f, 0.60f} };
 float search_level[3] = {0.57f, 0.59f, 0.61f};
 
@@ -1310,8 +1310,10 @@ void UCTSearcher::NextStep()
 			int add;
 			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -1);
 			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -3);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 22 : -16);
-			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / 22.0)));
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 22 : -10);
+			float r = 22;
+			if (pos_id == 2 && pos_root->turn() == Black) r = 30;
+			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / r)));
 			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - min(480.0f, max(100.0f, (360.0f - (step + add) * 18.0f))));
 			const float reciprocal_temperature = 1.0f / temperature;
 			for (int i = 0; i < child_num; i++) {
@@ -1393,13 +1395,13 @@ void UCTSearcher::NextStep()
 				best_move = best_move10;
 			if (ply == RANDOM_MOVE + 1) {
 				static int count_distribution[3][7];
-				if (best_wp <= 0.340) count_distribution[pos_id][0]++;
-				if (0.340 < best_wp && best_wp <= 0.402) count_distribution[pos_id][1]++; // -500 ~ -300
-				if (0.402 < best_wp && best_wp <= 0.467) count_distribution[pos_id][2]++; // -300 ~ -100
-				if (0.467 < best_wp && best_wp <= 0.533) count_distribution[pos_id][3]++; // -100 ~ 100
-				if (0.533 < best_wp && best_wp <= 0.598) count_distribution[pos_id][4]++;
-				if (0.598 < best_wp && best_wp <= 0.660) count_distribution[pos_id][5]++;
-				if (0.660 < best_wp) count_distribution[pos_id][6]++;
+				if (best_wp <= 0.304) count_distribution[pos_id][0]++;
+				if (0.304 < best_wp && best_wp <= 0.378) count_distribution[pos_id][1]++; // -625 ~ -375
+				if (0.378 < best_wp && best_wp <= 0.459) count_distribution[pos_id][2]++; // -375 ~ -125
+				if (0.459 < best_wp && best_wp <= 0.541) count_distribution[pos_id][3]++; // -125 ~ 125
+				if (0.541 < best_wp && best_wp <= 0.622) count_distribution[pos_id][4]++;
+				if (0.622 < best_wp && best_wp <= 0.696) count_distribution[pos_id][5]++;
+				if (0.696 < best_wp) count_distribution[pos_id][6]++;
 				int a[7];
 				for (int c = 0; c < 7; c++) a[c] = count_distribution[pos_id][c];
 				if (grp->group_id == 0)
