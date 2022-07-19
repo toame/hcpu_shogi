@@ -52,6 +52,7 @@ def main(*argv):
     parser.add_argument('--use_average', action='store_true')
     parser.add_argument('--use_evalfix', action='store_true')
     parser.add_argument('--temperature', type=float, default=1.0)
+    parser.add_argument('--itr', type=int, default=10000)
     args = parser.parse_args(argv)
 
     if args.log:
@@ -244,9 +245,13 @@ def main(*argv):
         sum_loss2_epoch = 0
         sum_loss3_epoch = 0
         sum_loss_epoch = 0
+        k = 0
         for x1, x2, t1, t2, value in train_dataloader:
             t += 1
             steps += 1
+            k += 1
+            if k > args.itr:
+                break
             with torch.cuda.amp.autocast(enabled=args.use_amp):
                 model.train()
 
@@ -282,23 +287,23 @@ def main(*argv):
 
             # print train loss
             if t % eval_interval == 0:
-                model.eval()
+                # model.eval()
 
-                x1, x2, t1, t2, value = test_dataloader.sample()
-                with torch.no_grad():
-                    y1, y2 = model(x1, x2)
+                # x1, x2, t1, t2, value = test_dataloader.sample()
+                # with torch.no_grad():
+                #     y1, y2 = model(x1, x2)
 
-                    loss1 = cross_entropy_loss(y1, t1).mean()
-                    loss2 = bce_with_logits_loss(y2, t2)
-                    loss3 = bce_with_logits_loss(y2, value)
-                    loss = loss1 + (1 - args.val_lambda) * loss2 + args.val_lambda * loss3
+                #     loss1 = cross_entropy_loss(y1, t1).mean()
+                #     loss2 = bce_with_logits_loss(y2, t2)
+                #     loss3 = bce_with_logits_loss(y2, value)
+                #     loss = loss1 + (1 - args.val_lambda) * loss2 + args.val_lambda * loss3
 
-                    logging.info('epoch = {}, steps = {}, train loss = {:.07f}, {:.07f}, {:.07f}, {:.07f}, test loss = {:.07f}, {:.07f}, {:.07f}, {:.07f}, test accuracy = {:.07f}, {:.07f}'.format(
-                        epoch, t,
-                        sum_loss1 / steps, sum_loss2 / steps, sum_loss3 / steps, sum_loss / steps,
-                        loss1.item(), loss2.item(), loss3.item(), loss.item(),
-                        accuracy(y1, t1), binary_accuracy(y2, t2)))
-
+                #     logging.info('epoch = {}, steps = {}, train loss = {:.07f}, {:.07f}, {:.07f}, {:.07f}, test loss = {:.07f}, {:.07f}, {:.07f}, {:.07f}, test accuracy = {:.07f}, {:.07f}'.format(
+                #         epoch, t,
+                #         sum_loss1 / steps, sum_loss2 / steps, sum_loss3 / steps, sum_loss / steps,
+                #         loss1.item(), loss2.item(), loss3.item(), loss.item(),
+                #         accuracy(y1, t1), binary_accuracy(y2, t2)))
+                logging.info('epoch = {}, steps = {}, train loss = {:.07f}, {:.07f}, {:.07f}, {:.07f}'.format(epoch, t,sum_loss1 / steps, sum_loss2 / steps, sum_loss3 / steps, sum_loss / steps))
                 steps_epoch += steps
                 sum_loss1_epoch += sum_loss1
                 sum_loss2_epoch += sum_loss2

@@ -42,9 +42,9 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {650, 500, 300}, {350, 220, 80}};
-float temperature_level[2][3] = { {0.65f, 0.65f, 0.82f}, {0.5f, 0.5f, 0.8f} };
-float search_level[3] = {0.55f, 0.57f, 0.59f};
+float playouts_level[2][3] = { {650, 450, 250}, {250, 110, 30}};
+float temperature_level[2][3] = { {0.72f, 0.72f, 0.95f}, {0.45f, 0.45f, 0.85f} };
+float search_level[3] = {0.57f, 0.59f, 0.61f};
 
 void sigint_handler(int signum)
 {
@@ -1234,7 +1234,7 @@ void UCTSearcher::NextStep()
 		int max_ = 0;
 		for (int i = 0; i < child_num; i++) {
 			if (sorted_uct_childs[i]->move_count == 0) break;
-			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.0f - playouts_level[pattern][pos_id] * 0.003f), reciprocal_temperature);
+			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.0f - playouts_level[pattern][pos_id] * 0.004f), reciprocal_temperature);
 			probabilities.emplace_back(probability);
 			max_ = max(max_, sorted_uct_childs[i]->move_count);
 		}
