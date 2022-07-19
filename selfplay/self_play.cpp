@@ -1307,7 +1307,9 @@ void UCTSearcher::NextStep()
 			vector<double> probabilities;
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
-			int add = ((pos_root->turn() == White) ? 6 : 0);
+			int add;
+			if (pos_id == 0) add = ((pos_root->turn() == White) ? 6 : 0);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 8 : -2);
 			if (pos_id == 2) add = ((pos_root->turn() == White) ? 12 : -8);
 			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / 22.0)));
 			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - max(100.0f, (550.0f - (step + add) * 25.0f)));
@@ -1392,13 +1394,13 @@ void UCTSearcher::NextStep()
 			if (ply == RANDOM_MOVE + 1) {
 				
 				static int count_distribution[3][7];
-				if (best_wp <= 0.25) count_distribution[pos_id][0]++;
-				if (0.25 < best_wp && best_wp <= 0.35) count_distribution[pos_id][1]++;
-				if (0.35 < best_wp && best_wp < 0.45) count_distribution[pos_id][2]++;
-				if (0.45 < best_wp && best_wp < 0.55) count_distribution[pos_id][3]++;
-				if (0.55 < best_wp && best_wp < 0.65) count_distribution[pos_id][4]++;
-				if (0.65 < best_wp && best_wp < 0.75) count_distribution[pos_id][5]++;
-				if (0.75 < best_wp) count_distribution[pos_id][6]++;
+				if (best_wp <= 0.311) count_distribution[pos_id][0]++;
+				if (0.311 < best_wp && best_wp <= 0.371) count_distribution[pos_id][1]++;
+				if (0.371 < best_wp && best_wp <= 0.434) count_distribution[pos_id][2]++;
+				if (0.434 < best_wp && best_wp <= 0.566) count_distribution[pos_id][3]++;
+				if (0.566 < best_wp && best_wp <= 0.629) count_distribution[pos_id][4]++;
+				if (0.629 < best_wp && best_wp <= 0.689) count_distribution[pos_id][5]++;
+				if (0.689 < best_wp) count_distribution[pos_id][6]++;
 				int a[7];
 				for (int c = 0; c < 7; c++) a[c] = count_distribution[pos_id][c];
 				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: {} {} {} {} {} {} {}", 
