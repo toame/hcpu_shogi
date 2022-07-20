@@ -42,9 +42,9 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {550, 350, 200}, {220, 110, 40}};
-float temperature_level[2][3] = { {0.80f, 0.75f, 0.85f}, {0.45f, 0.45f, 0.55f} };
-float search_level[3] = {0.56f, 0.58f, 0.60f};
+float playouts_level[2][3] = { {550, 350, 200}, {220, 110, 40} };
+float temperature_level[2][3] = { {0.80f, 0.75f, 0.80f}, {0.45f, 0.45f, 0.55f} };
+float search_level[3] = { 0.56f, 0.58f, 0.60f };
 
 void sigint_handler(int signum)
 {
@@ -247,7 +247,7 @@ inline float score_to_value(const int score) {
 
 // 詰み探索スロット
 struct MateSearchEntry {
-	Position *pos;
+	Position* pos;
 	enum State { RUNING, NOMATE, WIN, LOSE };
 	atomic<State> status;
 	Move move;
@@ -284,12 +284,12 @@ public:
 		checkCudaErrors(cudaFreeHost(y2));
 	}
 
-	void QueuingNode(const Position *pos, uct_node_t* node, float* value_win);
+	void QueuingNode(const Position* pos, uct_node_t* node, float* value_win);
 	void EvalNode();
 	void SelfPlay();
 	void Run();
 	void Join();
-	void QueuingMateSearch(Position *pos, const int id) {
+	void QueuingMateSearch(Position* pos, const int id) {
 		lock_guard<mutex> lock(mate_search_mutex);
 		mate_search_slot[id].pos = pos;
 		mate_search_slot[id].status = MateSearchEntry::RUNING;
@@ -535,7 +535,7 @@ UCTSearcherGroup::Initialize()
 		while (std::getline(ss, field, ',')) {
 			const auto pos = field.find_first_of(":");
 			options.emplace_back(field.substr(0, pos), field.substr(pos + 1));
-		
+
 		}
 		usi_engines.reserve(usi_threads);
 		for (int i = 0; i < usi_threads; ++i) {
@@ -932,7 +932,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 //  ノードをキューに追加            //
 //////////////////////////////////////
 void
-UCTSearcherGroup::QueuingNode(const Position *pos, uct_node_t* node, float* value_win)
+UCTSearcherGroup::QueuingNode(const Position* pos, uct_node_t* node, float* value_win)
 {
 	// set all zero
 	std::fill_n(features1[current_policy_value_batch_index], sizeof(packed_features1_t), 0);
@@ -952,8 +952,8 @@ UCTSearcher::InterruptionCheck(const int playout_count, const int extension_time
 	int max_index = 0;
 	int max = 0, second = 0;
 	const int child_num = root_node->child_num;
-	int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 1.2)) : max_playout_num * 1.5;
-	if (extension_times > 0) limit_playout = std::max(300, limit_playout);
+	int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 1.2 + 20)) : max_playout_num * 1.5;
+	if (extension_times == 0) limit_playout = std::max(300, limit_playout);
 	const int rest = limit_playout - playout_count;
 	const child_node_t* uct_child = root_node->child.get();
 
@@ -1002,7 +1002,7 @@ void UCTSearcherGroup::EvalNode() {
 	parent->nn_forward(policy_value_batch_size, features1, features2, y1, y2);
 
 	DType(*logits)[MAX_MOVE_LABEL_NUM * SquareNum] = reinterpret_cast<DType(*)[MAX_MOVE_LABEL_NUM * SquareNum]>(y1);
-	DType *value = y2;
+	DType* value = y2;
 
 	for (int i = 0; i < policy_value_batch_size; i++, logits++, value++) {
 		uct_node_t* node = policy_value_batch[i].node;
@@ -1056,7 +1056,7 @@ void UCTSearcher::Playout(visitor_t& visitor)
 					ifs.seekg(inputFileDist(*mt_64) * sizeof(HuffmanCodedPos), std::ios_base::beg);
 					ifs.read(reinterpret_cast<char*>(&hcp), sizeof(hcp));
 				}
-				
+
 
 				pos_id = (*mt_64)() % 3;
 				pattern = (*mt_64)() % 2;
@@ -1245,7 +1245,7 @@ void UCTSearcher::NextStep()
 		int max_ = 0;
 		for (int i = 0; i < child_num; i++) {
 			if (sorted_uct_childs[i]->move_count == 0) break;
-			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.0f - playouts_level[pattern][pos_id] * 0.004f), reciprocal_temperature);
+			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.0f - playouts_level[pattern][pos_id] * 0.005f), reciprocal_temperature);
 			probabilities.emplace_back(probability);
 			max_ = max(max_, sorted_uct_childs[i]->move_count);
 		}
@@ -1308,9 +1308,9 @@ void UCTSearcher::NextStep()
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
 			int add;
-			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -1);
-			if (pos_id == 1) add = ((pos_root->turn() == White) ? 9 : -3);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -14);
+			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -2);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 9 : -7);
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 16 : -20);
 			float r = 22;
 			if (pos_id == 2 && pos_root->turn() == Black) r = 30;
 			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / r)));
@@ -1391,7 +1391,7 @@ void UCTSearcher::NextStep()
 				best_wp = 0.0f;
 			}
 			best_move = uct_child[select_index].move;
-			if(pos_root->turn() == Black)
+			if (pos_root->turn() == Black)
 				best_move = best_move10;
 			if (ply == RANDOM_MOVE + 1) {
 				static int count_distribution[3][7];
@@ -1405,7 +1405,7 @@ void UCTSearcher::NextStep()
 				int a[7];
 				for (int c = 0; c < 7; c++) a[c] = count_distribution[pos_id][c];
 				if (grp->group_id == 0)
-					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pos_id:{} {} {} {} {} {} {} {}", 
+					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pos_id:{} {} {} {} {} {} {} {}",
 						grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
 			}
 			if (ply == RANDOM_MOVE + 31) {
@@ -1419,11 +1419,25 @@ void UCTSearcher::NextStep()
 				if (0.7896 < best_wp) count_distribution2[pattern][pos_id][6]++;
 				int a[7];
 				for (int c = 0; c < 7; c++) a[c] = count_distribution2[pattern][pos_id][c];
-				if (grp->group_id == 0)
+				if (grp->group_id <= 1)
 					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pattern:{} pos_id:{} {} {} {} {} {} {} {}",
 						grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pattern, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
 			}
-			if(grp->group_id == 0 && id == 0)
+			if (ply == RANDOM_MOVE + 61) {
+				static int count_distribution3[2][3][7];
+				if (best_wp <= 0.2104) count_distribution3[pattern][pos_id][0]++;
+				if (0.2104 < best_wp && best_wp <= 0.3114) count_distribution3[pattern][pos_id][1]++; // -1000 ~ -600
+				if (0.3114 < best_wp && best_wp <= 0.4342) count_distribution3[pattern][pos_id][2]++; // -600 ~ -200
+				if (0.4342 < best_wp && best_wp <= 0.5658) count_distribution3[pattern][pos_id][3]++; // -200 ~ 200
+				if (0.5658 < best_wp && best_wp <= 0.6886) count_distribution3[pattern][pos_id][4]++;
+				if (0.6886 < best_wp && best_wp <= 0.7896) count_distribution3[pattern][pos_id][5]++;
+				if (0.7896 < best_wp) count_distribution3[pattern][pos_id][6]++;
+				int a[7];
+				for (int c = 0; c < 7; c++) a[c] = count_distribution3[pattern][pos_id][c];
+				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pattern:{} pos_id:{} {} {} {} {} {} {} {}",
+					grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pattern, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+			}
+			if (grp->group_id == 0 && id == 0)
 				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} bestmove:{} bestmove10:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_move10.toUSI(), best_wp);
 			best_move10 = Move::moveNone();
 			{
@@ -1439,7 +1453,7 @@ void UCTSearcher::NextStep()
 					return;
 				}
 			}
-			
+
 			// 局面追加
 			AddRecord(best_move, value_to_score(best_wp), true);
 		}
@@ -1538,8 +1552,8 @@ void UCTSearcher::NextGame()
 	}
 	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} gameResult:{} black_win:{} white_win:{} pattern:{} pos_id:{} playout_level:{}, temeperature_level:{}",
 		grp->gpu_id, grp->group_id, id, ply, gameResult, gameResult_count[pattern][pos_id][BlackWin], gameResult_count[pattern][pos_id][WhiteWin], pattern, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id]);
-	
-	
+
+
 
 	// 局面出力
 	if (ply >= MIN_MOVE && records.size() > 0) {
@@ -1653,7 +1667,7 @@ void make_teacher(const char* recordFileName, const char* outputFileName, const 
 					usi_wins,
 					usi_draws,
 					elapsed_msec / 1000,
-					std::max<s64>(0, (s64)(elapsed_msec*(1.0 - progress) / (progress * 1000))));
+					std::max<s64>(0, (s64)(elapsed_msec * (1.0 - progress) / (progress * 1000))));
 			int running = 0;
 			for (size_t i = 0; i < group_pairs.size(); i++)
 				running += group_pairs[i].Running();
@@ -1771,7 +1785,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
-	catch (cxxopts::OptionException &e) {
+	catch (cxxopts::OptionException& e) {
 		std::cout << options.usage() << std::endl;
 		std::cerr << e.what() << std::endl;
 		return 0;
