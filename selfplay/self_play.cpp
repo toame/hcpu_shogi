@@ -42,8 +42,8 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {450, 280, 150}, {220, 110, 40}};
-float temperature_level[2][3] = { {0.90f, 0.90f, 1.00f}, {0.50f, 0.50f, 0.60f} };
+float playouts_level[2][3] = { {550, 350, 200}, {220, 110, 40}};
+float temperature_level[2][3] = { {0.70f, 0.70f, 0.85f}, {0.50f, 0.50f, 0.60f} };
 float search_level[3] = {0.56f, 0.58f, 0.60f};
 
 void sigint_handler(int signum)
