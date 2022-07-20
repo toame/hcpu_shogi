@@ -449,7 +449,7 @@ private:
 			const size_t child_num = root_node->child_num;
 			for (size_t i = 0; i < child_num; ++i) {
 				// ノイズにより選んだ回数を除く
-				const auto move_count = child[i].move_count - noise_count[i] * 0;
+				const auto move_count = child[i].move_count - noise_count[i] * 0 - 1;
 				if (move_count > 0) {
 					record.candidates.emplace_back(
 						static_cast<u16>(child[i].move.value()),
