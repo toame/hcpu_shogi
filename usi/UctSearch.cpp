@@ -1529,6 +1529,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 			// 未探索のノードの価値に、親ノードの価値を使用する
 			q = parent_q;
 			u = init_u;
+			if (parent == nullptr) q = 1.0;
 		}
 		else {
 			q = (float)(win / move_count);
