@@ -43,7 +43,7 @@ int threads = 2;
 volatile sig_atomic_t stopflg = false;
 
 float playouts_level[2][3] = { {550, 350, 200}, {220, 110, 40}};
-float temperature_level[2][3] = { {0.70f, 0.70f, 0.85f}, {0.50f, 0.50f, 0.60f} };
+float temperature_level[2][3] = { {0.80f, 0.75f, 0.85f}, {0.45f, 0.45f, 0.55f} };
 float search_level[3] = {0.56f, 0.58f, 0.60f};
 
 void sigint_handler(int signum)
@@ -863,7 +863,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 	// UCB値最大の手を求める
 	for (int i = 0; i < child_num; i++) {
-		if (uct_child[i].IsWin()) {
+		if (uct_child[i].IsWin() || (parent_color == White && pos->turn() == White && uct_child[i].IsDraw())) {
 			child_win_count++;
 			// 負けが確定しているノードは選択しない
 			continue;
@@ -1308,11 +1308,11 @@ void UCTSearcher::NextStep()
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
 			int add;
-			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : 0);
-			if (pos_id == 1) add = ((pos_root->turn() == White) ? 9 : -2);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -10);
+			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -1);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 9 : -3);
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -14);
 			float r = 22;
-			if (pos_id == 2 && pos_root->turn() == Black) r = 26;
+			if (pos_id == 2 && pos_root->turn() == Black) r = 30;
 			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / r)));
 			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - min(480.0f, max(100.0f, (360.0f - (step + add) * 18.0f))));
 			const float reciprocal_temperature = 1.0f / temperature;
@@ -1405,8 +1405,23 @@ void UCTSearcher::NextStep()
 				int a[7];
 				for (int c = 0; c < 7; c++) a[c] = count_distribution[pos_id][c];
 				if (grp->group_id == 0)
-					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: {} {} {} {} {} {} {}", 
-						grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pos_id:{} {} {} {} {} {} {} {}", 
+						grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+			}
+			if (ply == RANDOM_MOVE + 31) {
+				static int count_distribution2[2][3][7];
+				if (best_wp <= 0.2104) count_distribution2[pattern][pos_id][0]++;
+				if (0.2104 < best_wp && best_wp <= 0.3114) count_distribution2[pattern][pos_id][1]++; // -1000 ~ -600
+				if (0.3114 < best_wp && best_wp <= 0.4342) count_distribution2[pattern][pos_id][2]++; // -600 ~ -200
+				if (0.4342 < best_wp && best_wp <= 0.5658) count_distribution2[pattern][pos_id][3]++; // -200 ~ 200
+				if (0.5658 < best_wp && best_wp <= 0.6886) count_distribution2[pattern][pos_id][4]++;
+				if (0.6886 < best_wp && best_wp <= 0.7896) count_distribution2[pattern][pos_id][5]++;
+				if (0.7896 < best_wp) count_distribution2[pattern][pos_id][6]++;
+				int a[7];
+				for (int c = 0; c < 7; c++) a[c] = count_distribution2[pattern][pos_id][c];
+				if (grp->group_id == 0)
+					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pattern:{} pos_id:{} {} {} {} {} {} {} {}",
+						grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pattern, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
 			}
 			if(grp->group_id == 0 && id == 0)
 				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} bestmove:{} bestmove10:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_move10.toUSI(), best_wp);
