@@ -1243,7 +1243,7 @@ void UCTSearcher::NextStep()
 		probabilities.reserve(child_num);
 		const float reciprocal_temperature = 1.0f / temperature_level[pattern][pos_id];
 		int max_ = 0;
-		for (int i = 0; i < child_num; i++) {
+		for (int i = 0; i < std::min<int>(6, child_num); i++) {
 			if (sorted_uct_childs[i]->move_count == 0) break;
 			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.0f - playouts_level[pattern][pos_id] * 0.005f), reciprocal_temperature);
 			probabilities.emplace_back(probability);
@@ -1308,10 +1308,11 @@ void UCTSearcher::NextStep()
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
 			int add;
-			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -2);
-			if (pos_id == 1) add = ((pos_root->turn() == White) ? 9 : -7);
+			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -3);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -10);
 			if (pos_id == 2) add = ((pos_root->turn() == White) ? 16 : -20);
 			float r = 22;
+			if (pos_id == 1 && pos_root->turn() == Black) r = 26;
 			if (pos_id == 2 && pos_root->turn() == Black) r = 30;
 			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / r)));
 			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - min(480.0f, max(100.0f, (360.0f - (step + add) * 18.0f))));
