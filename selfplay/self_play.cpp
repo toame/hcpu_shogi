@@ -1308,11 +1308,11 @@ void UCTSearcher::NextStep()
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
 			int add;
-			if (pos_id == 0) add = ((pos_root->turn() == White) ? 6 : 0);
-			if (pos_id == 1) add = ((pos_root->turn() == White) ? 8 : -2);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -8);
+			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : 0);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 9 : -2);
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -10);
 			float r = 22;
-			if (pos_id == 2 && pos_root->turn() == Black) r = 24;
+			if (pos_id == 2 && pos_root->turn() == Black) r = 26;
 			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / r)));
 			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - min(480.0f, max(100.0f, (360.0f - (step + add) * 18.0f))));
 			const float reciprocal_temperature = 1.0f / temperature;
