@@ -1807,6 +1807,9 @@ RepetitionType Position::isDraw(const int checkMaxPly) const {
                 if (st_->hand.isEqualOrSuperior(stp->hand)) return RepetitionSuperior;
                 if (stp->hand.isEqualOrSuperior(st_->hand)) return RepetitionInferior;
             }
+            else if (i + 1 <= e && stp->previous->boardKey == (st_->boardKey ^ zobTurn())) {
+                if (st_->hand.isEqualOrSuperior(stp->hand)) return RepetitionSuperior;
+            }
             i += 2;
         } while (i <= e);
     }
