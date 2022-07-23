@@ -853,8 +853,8 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 	int child_win_count = 0;
 
 	max_value = max_value_nonoise = -FLT_MAX;
-
-	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, search_level[pos_id] + pattern2 * 0.03f) : sqrtf((float)sum);
+	const float a = parent_color == Black ? -0.04f : 0.00f;
+	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, search_level[pos_id] + pattern2 * 0.04f + a) : sqrtf((float)sum);
 	const float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
