@@ -955,7 +955,8 @@ UCTSearcher::InterruptionCheck(const int playout_count, const int extension_time
 	int max = 0, second = 0;
 	const int child_num = root_node->child_num;
 	int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 1.2 + 20)) : max_playout_num * 1.5;
-	if (extension_times == 0) limit_playout = std::max(300, limit_playout) + child_num;
+	if (extension_times == 0) limit_playout = std::max(300, limit_playout);
+	limit_playout += child_num;
 	const int rest = limit_playout - playout_count;
 	const child_node_t* uct_child = root_node->child.get();
 
