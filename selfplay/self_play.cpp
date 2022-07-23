@@ -44,7 +44,7 @@ volatile sig_atomic_t stopflg = false;
 
 float playouts_level[2][3] = { {550, 420, 250}, {320, 220, 100} };
 float temperature_level[2][3] = { {0.65f, 0.6f, 0.6f}, {0.40f, 0.40f, 0.40f} };
-float search_level[3] = { 0.57f, 0.60f, 0.63f };
+float search_level[3] = { 0.56f, 0.59f, 0.62f };
 
 void sigint_handler(int signum)
 {
@@ -397,6 +397,7 @@ private:
 
 	int pos_id;
 	int pattern;
+	int pattern2;
 
 	Move best_move10 = Move::moveNone();
 
@@ -853,7 +854,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 	max_value = max_value_nonoise = -FLT_MAX;
 
-	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, search_level[pos_id]) : sqrtf((float)sum);
+	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, search_level[pos_id] + pattern2 * 0.03f) : sqrtf((float)sum);
 	const float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
@@ -863,7 +864,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 	// UCB値最大の手を求める
 	for (int i = 0; i < child_num; i++) {
-		if (uct_child[i].IsWin() || (parent_color == White && pos->turn() == White && uct_child[i].IsDraw())) {
+		if ((parent_color == Black && uct_child[i].IsWin()) || (parent_color == White && pos->turn() == White && uct_child[i].IsDraw())) {
 			child_win_count++;
 			// 負けが確定しているノードは選択しない
 			continue;
@@ -1060,6 +1061,7 @@ void UCTSearcher::Playout(visitor_t& visitor)
 
 				pos_id = (*mt_64)() % 3;
 				pattern = (*mt_64)() % 2;
+				pattern2 = (*mt_64)() % 2;
 				best_move10 = Move::moveNone();
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
 				if (pos_id == 1) pos_root = new Position(DefaultStartPositionSFEN_4pieces, s.thisptr);
@@ -1309,8 +1311,8 @@ void UCTSearcher::NextStep()
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
 			int add;
 			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -2);
-			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -7);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 16 : -13);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -6);
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 16 : -11);
 			float r = 22;
 			if (pos_id == 1 && pos_root->turn() == Black) r = 24;
 			if (pos_id == 2 && pos_root->turn() == Black) r = 27;
