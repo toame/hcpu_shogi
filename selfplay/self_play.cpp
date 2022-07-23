@@ -42,9 +42,9 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {550, 350, 200}, {220, 110, 40} };
-float temperature_level[2][3] = { {0.80f, 0.75f, 0.80f}, {0.45f, 0.45f, 0.55f} };
-float search_level[3] = { 0.56f, 0.58f, 0.60f };
+float playouts_level[2][3] = { {550, 420, 250}, {320, 220, 100} };
+float temperature_level[2][3] = { {0.65f, 0.6f, 0.6f}, {0.40f, 0.40f, 0.40f} };
+float search_level[3] = { 0.57f, 0.60f, 0.63f };
 
 void sigint_handler(int signum)
 {
@@ -979,7 +979,7 @@ UCTSearcher::InterruptionCheck(const int playout_count, const int extension_time
 	if (max - second > rest) {
 		// 最善手の探索回数が次善手の探索回数の
 		// 1.2倍未満なら探索延長
-		if (max_playout_num < playout_num * extension_times && max < second * 1.2) {
+		if (color == White && max_playout_num < playout_num * extension_times && max < second * 1.3) {
 			max_playout_num += playout_num / 2;
 			return false;
 		}
@@ -1243,9 +1243,9 @@ void UCTSearcher::NextStep()
 		probabilities.reserve(child_num);
 		const float reciprocal_temperature = 1.0f / temperature_level[pattern][pos_id];
 		int max_ = 0;
-		for (int i = 0; i < std::min<int>(6, child_num); i++) {
+		for (int i = 0; i < std::min<int>(5, child_num); i++) {
 			if (sorted_uct_childs[i]->move_count == 0) break;
-			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.0f - playouts_level[pattern][pos_id] * 0.005f), reciprocal_temperature);
+			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.5f - playouts_level[pattern][pos_id] * 0.006f), reciprocal_temperature);
 			probabilities.emplace_back(probability);
 			max_ = max(max_, sorted_uct_childs[i]->move_count);
 		}
@@ -1308,12 +1308,13 @@ void UCTSearcher::NextStep()
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
 			int add;
-			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -3);
-			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -10);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 16 : -20);
+			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : -2);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -7);
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 16 : -13);
 			float r = 22;
-			if (pos_id == 1 && pos_root->turn() == Black) r = 26;
-			if (pos_id == 2 && pos_root->turn() == Black) r = 30;
+			if (pos_id == 1 && pos_root->turn() == Black) r = 24;
+			if (pos_id == 2 && pos_root->turn() == Black) r = 27;
+
 			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / r)));
 			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - min(480.0f, max(100.0f, (360.0f - (step + add) * 18.0f))));
 			const float reciprocal_temperature = 1.0f / temperature;
