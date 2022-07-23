@@ -884,6 +884,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 			// 未探索のノードの価値に、親ノードの価値を使用する
 			q = parent_q;
 			u = init_u;
+			if (parent == nullptr) q = 10.0f;
 		}
 		else {
 			q = (float)(win / move_count);
@@ -954,7 +955,7 @@ UCTSearcher::InterruptionCheck(const int playout_count, const int extension_time
 	int max = 0, second = 0;
 	const int child_num = root_node->child_num;
 	int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 1.2 + 20)) : max_playout_num * 1.5;
-	if (extension_times == 0) limit_playout = std::max(300, limit_playout);
+	if (extension_times == 0) limit_playout = std::max(300, limit_playout) + child_num;
 	const int rest = limit_playout - playout_count;
 	const child_node_t* uct_child = root_node->child.get();
 
@@ -1230,7 +1231,7 @@ void UCTSearcher::NextStep()
 	playout++;
 
 	// 低プレイアウト時の手を記録
-	if (playout >= int(playouts_level[pattern][pos_id]) && best_move10 == Move::moveNone()) {
+	if (playout >= int(playouts_level[pattern][pos_id] + root_node->child_num) && best_move10 == Move::moveNone()) {
 		const child_node_t* uct_child = root_node->child.get();
 		const auto child_num = root_node->child_num;
 
