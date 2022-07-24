@@ -101,7 +101,7 @@ constexpr int EXTENSION_TIMES = 2; // 探索延長回数
 bool REUSE_SUBTREE = false; // 探索済みノードを再利用するか
 
 struct CachedNNRequest {
-	CachedNNRequest(size_t size) : nnrate(size) {}
+	CachedNNRequest(size_t size) : nnrate(size), nnrate2(size) {}
 	float value_win;
 	std::vector<float> nnrate;
 	std::vector<float> nnrate2;
