@@ -198,3 +198,28 @@ void softmax_temperature_with_normalize(child_node_t* child_node, const int chil
         x /= sum;
     }
 }
+
+void softmax_temperature_with_normalize_(child_node_t* child_node, const int child_num) {
+    // apply beta exponent to probabilities(in log space)
+    float max = 0.0f;
+    const float beta = 1.0f / 1.2f;
+    for (int i = 0; i < child_num; i++) {
+        float& x = child_node[i].nnrate2;
+        x *= beta;
+        if (x > max) {
+            max = x;
+        }
+    }
+    // オーバーフローを防止するため最大値で引く
+    float sum = 0.0f;
+    for (int i = 0; i < child_num; i++) {
+        float& x = child_node[i].nnrate2;
+        x = expf(x - max);
+        sum += x;
+    }
+    // normalize
+    for (int i = 0; i < child_num; i++) {
+        float& x = child_node[i].nnrate2;
+        x /= sum;
+    }
+}

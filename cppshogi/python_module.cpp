@@ -109,7 +109,6 @@ size_t load_hcpe(const std::string& filepath, std::ifstream& ifs, bool use_avera
 		if (ifs.eof()) {
 			break;
 		}
-
 		const int eval = (int)(hcpe.eval * eval_scale);
 		if (use_average) {
 			auto ret = duplicates.emplace(hcpe.hcp, trainingData.size());
@@ -140,7 +139,6 @@ size_t load_hcpe(const std::string& filepath, std::ifstream& ifs, bool use_avera
 		}
 		++len;
 	}
-
 	return trainingData.size();
 }
 
@@ -178,7 +176,7 @@ inline void visits_to_proberbility(TrainingData& data, const std::vector<MoveVis
 		double sum = 0;
 		for (size_t i = 0; i < candidates.size(); i++) {
 			const auto& moveVisits = candidates[i];
-			const auto new_visits = std::pow(moveVisits.visitNum, 1.0 / temperature);
+			const auto new_visits = std::pow(std::max(0.001f, moveVisits.visitNum - 0.7f), 1.0 / temperature);
 			exponentiated_visits[i] = new_visits;
 			sum += new_visits;
 		}
@@ -224,7 +222,7 @@ size_t __load_hcpe3(const std::string& filepath, bool use_average, double a, dou
 	ifs.seekg(std::ios_base::beg);
 
 	std::vector<MoveVisits> candidates;
-
+	std::mt19937 mt;
 	for (int p = 0; ifs; ++p) {
 		HuffmanCodedPosAndEval3 hcpe3;
 		ifs.read((char*)&hcpe3, sizeof(HuffmanCodedPosAndEval3));
@@ -241,17 +239,21 @@ size_t __load_hcpe3(const std::string& filepath, bool use_average, double a, dou
 			throw std::runtime_error(ss.str());
 		}
 		StateListPtr states{ new std::deque<StateInfo>(1) };
-
 		for (int i = 0; i < hcpe3.moveNum; ++i) {
-			MoveInfo moveInfo;
+			
+ 			MoveInfo moveInfo;
 			ifs.read((char*)&moveInfo, sizeof(MoveInfo));
 			assert(moveInfo.candidateNum <= 593);
 
 			// candidateNum==0の手は読み飛ばす
-			if (moveInfo.candidateNum > 0) {
+			if (moveInfo.candidateNum > 0 && mt() % 10 != 0) {
 				candidates.resize(moveInfo.candidateNum);
 				ifs.read((char*)candidates.data(), sizeof(MoveVisits) * moveInfo.candidateNum);
-
+			}
+			else if (moveInfo.candidateNum > 0) {
+				candidates.resize(moveInfo.candidateNum);
+				ifs.read((char*)candidates.data(), sizeof(MoveVisits) * moveInfo.candidateNum);
+				
 				const auto hcp = pos.toHuffmanCodedPos();
 				const int eval = (int)(moveInfo.eval * eval_scale);
 				if (use_average) {
@@ -283,13 +285,20 @@ size_t __load_hcpe3(const std::string& filepath, bool use_average, double a, dou
 					visits_to_proberbility<false>(data, candidates, temperature);
 				}
 				++len;
+				if (len % 100000 == 0) {
+					std::cerr << len << std::endl;
+				}
 			}
 
 			const Move move = move16toMove((Move)moveInfo.selectedMove16, pos);
 			pos.doMove(move, states->emplace_back(StateInfo()));
+			//if (mt() % 10 == 0) {
+			//	trainingData.pop_back();
+			//	len--;
+			//}
 		}
 	}
-
+	std::cerr << "load_finish" << std::endl;
 	return trainingData.size();
 }
 
