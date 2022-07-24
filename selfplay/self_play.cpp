@@ -378,10 +378,11 @@ private:
 	void NextGame();
 
 	// キャッシュからnnrateをコピー
-	void CopyNNRate(uct_node_t* node, const vector<float>& nnrate) {
+	void CopyNNRate(uct_node_t* node, const vector<float>& nnrate, const vector<float>& nnrate2) {
 		child_node_t* uct_child = node->child.get();
 		for (int i = 0; i < node->child_num; i++) {
 			uct_child[i].nnrate = nnrate[i];
+			uct_child[i].nnrate2 = nnrate2[i];
 		}
 	}
 
@@ -746,7 +747,7 @@ UCTSearcher::UctSearch(Position* pos, child_node_t* parent, uct_node_t* current,
 			child_node->ExpandNode(pos);
 			assert(cache_lock->nnrate.size() == child_node->child_num);
 			// キャッシュからnnrateをコピー
-			CopyNNRate(child_node, cache_lock->nnrate);
+			CopyNNRate(child_node, cache_lock->nnrate, cache_lock->nnrate2);
 			// 経路により詰み探索の結果が異なるためキャッシュヒットしても詰みの場合があるが、速度が落ちるため詰みチェックは行わない
 			result = 1.0f - cache_lock->value_win;
 		}
@@ -1149,15 +1150,15 @@ void UCTSearcher::Playout(visitor_t& visitor)
 			// ルート局面をキューに追加
 			if (!root_node->IsEvaled()) {
 				NNCacheLock cache_lock(&nn_cache, pos_root->getKey());
-				if (!cache_lock || cache_lock->nnrate.size() == 0) {
+				if (!cache_lock || cache_lock->nnrate.size() == 0 || cache_lock->nnrate2.size() == 0) {
 					grp->QueuingNode(pos_root, root_node.get(), nullptr);
 					return;
 				}
 				else {
 					assert(cache_lock->nnrate.size() == root_node->child_num);
+					assert(cache_lock->nnrate2.size() == root_node->child_num);
 					// キャッシュからnnrateをコピー
-					CopyNNRate(root_node.get(), cache_lock->nnrate);
-					CopyNNRate(root_node.get(), cache_lock->nnrate2);
+					CopyNNRate(root_node.get(), cache_lock->nnrate, cache_lock->nnrate2);
 				}
 			}
 		}
