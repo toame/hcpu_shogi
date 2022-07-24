@@ -104,6 +104,7 @@ struct CachedNNRequest {
 	CachedNNRequest(size_t size) : nnrate(size) {}
 	float value_win;
 	std::vector<float> nnrate;
+	std::vector<float> nnrate2;
 };
 typedef LruCache<uint64_t, CachedNNRequest> NNCache;
 typedef LruCacheLock<uint64_t, CachedNNRequest> NNCacheLock;
@@ -892,6 +893,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 		}
 
 		float rate = uct_child[i].nnrate;
+		if(parent_color == White) rate = uct_child[i].nnrate2;
 		if (parent == nullptr) {
 			const float ucb_value_nonoise = q + c * u * rate;
 			// ノイズがない場合の選択
@@ -1020,14 +1022,17 @@ void UCTSearcherGroup::EvalNode() {
 			const int move_label = make_move_label((u16)move.proFromAndTo(), color);
 			const float logit = (float)(*logits)[move_label];
 			uct_child[j].nnrate = logit;
+			uct_child[j].nnrate2 = logit;
 		}
 
 		// Boltzmann distribution
 		softmax_temperature_with_normalize(uct_child, child_num);
+		softmax_temperature_with_normalize_(uct_child, child_num);
 
 		auto req = make_unique<CachedNNRequest>(child_num);
 		for (int j = 0; j < child_num; j++) {
 			req->nnrate[j] = uct_child[j].nnrate;
+			req->nnrate2[j] = uct_child[j].nnrate2;
 		}
 
 		const float value_win = (float)*value;
@@ -1152,6 +1157,7 @@ void UCTSearcher::Playout(visitor_t& visitor)
 					assert(cache_lock->nnrate.size() == root_node->child_num);
 					// キャッシュからnnrateをコピー
 					CopyNNRate(root_node.get(), cache_lock->nnrate);
+					CopyNNRate(root_node.get(), cache_lock->nnrate2);
 				}
 			}
 		}
