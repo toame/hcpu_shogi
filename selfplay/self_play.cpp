@@ -42,9 +42,9 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {600, 450, 300}, {320, 220, 100} };
-float temperature_level[2][3] = { {0.75f, 0.75f, 0.85f}, {0.40f, 0.40f, 0.40f} };
-float search_level[2][3] = { {0.12f, 0.20f, 0.26f}, {0.35f, 0.45f, 0.55f} };
+float playouts_level[2][3] = { {520, 380, 230}, {320, 220, 100} };
+float temperature_level[2][3] = { {0.95f, 0.95f, 0.95f}, {0.40f, 0.40f, 0.40f} };
+float search_level[2][3] = { {0.5f, 0.7f, 0.9f}, {0.8f, 1.0f, 1.2f} };
 
 void sigint_handler(int signum)
 {
@@ -872,7 +872,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 		float add = 0.0f;
 		if (parent_color == White) add = search_level[1][pos_id];
 		else add = search_level[0][pos_id];
-		c += kld_ * add * 100.0f;
+		c += kld_ * add;
 		
 	}
 	const float fpu_reduction = (parent == nullptr ? 0.0f : c_fpu_reduction) * sqrtf(current->visited_nnrate);
@@ -1337,11 +1337,11 @@ void UCTSearcher::NextStep()
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
 			int add;
 			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : 0);
-			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -1);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -4);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -2);
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -6);
 			float r = 22;
-			if (pos_id == 1 && pos_root->turn() == Black) r = 22;
-			if (pos_id == 2 && pos_root->turn() == Black) r = 26;
+			if (pos_id == 1 && pos_root->turn() == Black) r = 23;
+			if (pos_id == 2 && pos_root->turn() == Black) r = 27;
 
 			const float temperature = RANDOM_TEMPERATURE * 2 / (1.0 + exp(((ply + add) / r)));
 			const auto cutoff_threshold = score_to_value(value_to_score(max_move_count_child->win / max_move_count_child->move_count) - min(480.0f, max(100.0f, (360.0f - (step + add) * 18.0f))));
