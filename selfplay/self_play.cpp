@@ -43,8 +43,8 @@ int threads = 2;
 volatile sig_atomic_t stopflg = false;
 
 float playouts_level[2][3] = { {600, 450, 250}, {320, 220, 100} };
-float temperature_level[2][3] = { {0.98f, 0.98f, 0.98f}, {0.40f, 0.40f, 0.40f} };
-float search_level[3] = { 0.45f, 0.55f, 0.65f };
+float temperature_level[2][3] = { {0.90f, 0.90f, 0.90f}, {0.40f, 0.40f, 0.40f} };
+float search_level[3] = { 0.30f, 0.40f, 0.50f };
 
 void sigint_handler(int signum)
 {
@@ -399,6 +399,8 @@ private:
 
 	int pos_id;
 	int pattern;
+
+	std::string kif;
 
 	Move best_move10 = Move::moveNone();
 
@@ -1085,6 +1087,9 @@ void UCTSearcher::Playout(visitor_t& visitor)
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
 				if (pos_id == 1) pos_root = new Position(DefaultStartPositionSFEN_4pieces, s.thisptr);
 				if (pos_id == 2) pos_root = new Position(DefaultStartPositionSFEN_6pieces, s.thisptr);
+				kif.clear();
+				kif += "position sfen ";
+				kif += pos_root->toSFEN() + " ";
 				hcp = pos_root->toHuffmanCodedPos();
 				//setPosition(*pos_root, hcp);
 				//SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN());
@@ -1461,7 +1466,7 @@ void UCTSearcher::NextStep()
 			//	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pattern:{} pos_id:{} {} {} {} {} {} {} {}",
 			//		grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pattern, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
 			//}
-			if (grp->group_id == 0 && id < 16)
+			if (grp->group_id == 0 && id < 4)
 				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} bestmove:{} bestmove10:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_move10.toUSI(), best_wp);
 			best_move10 = Move::moveNone();
 			{
@@ -1501,6 +1506,7 @@ void UCTSearcher::NextPly(const Move move)
 
 	// 着手
 	pos_root->doMove(move, states[ply]);
+	kif += move.toUSI() + " ";
 	ply++;
 	best_move10 = Move::moveNone();
 
@@ -1579,7 +1585,7 @@ void UCTSearcher::NextGame()
 	}
 	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} gameResult:{} black_win:{} white_win:{} pattern:{} pos_id:{} playout_level:{}, temeperature_level:{}",
 		grp->gpu_id, grp->group_id, id, ply, gameResult, gameResult_count[pattern][pos_id][BlackWin], gameResult_count[pattern][pos_id][WhiteWin], pattern, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id]);
-
+	SPDLOG_DEBUG(logger, "kif:{}", kif);
 
 
 	// 局面出力
