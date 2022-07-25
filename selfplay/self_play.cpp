@@ -42,9 +42,9 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {600, 450, 250}, {320, 220, 100} };
+float playouts_level[2][3] = { {600, 450, 300}, {320, 220, 100} };
 float temperature_level[2][3] = { {0.90f, 0.90f, 0.90f}, {0.40f, 0.40f, 0.40f} };
-float search_level[3] = { 0.30f, 0.40f, 0.50f };
+float search_level[3] = { 0.15f, 0.20f, 0.25f };
 
 void sigint_handler(int signum)
 {
@@ -870,7 +870,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 			}
 		}
 		float add = 0.0f;
-		if (parent_color == White) add = 0.1f;
+		if (parent_color == White) add = search_level[pos_id];
 		c += kld_ * (search_level[pos_id] + add) * 100.0f;
 		
 	}
@@ -1088,8 +1088,8 @@ void UCTSearcher::Playout(visitor_t& visitor)
 				if (pos_id == 1) pos_root = new Position(DefaultStartPositionSFEN_4pieces, s.thisptr);
 				if (pos_id == 2) pos_root = new Position(DefaultStartPositionSFEN_6pieces, s.thisptr);
 				kif.clear();
-				kif += "position sfen ";
-				kif += pos_root->toSFEN() + " ";
+				kif += "position ";
+				kif += pos_root->toSFEN() + " moves ";
 				hcp = pos_root->toHuffmanCodedPos();
 				//setPosition(*pos_root, hcp);
 				//SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN());
