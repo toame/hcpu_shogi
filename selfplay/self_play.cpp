@@ -42,9 +42,9 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 
-float playouts_level[2][3] = { {550, 420, 250}, {320, 220, 100} };
-float temperature_level[2][3] = { {0.65f, 0.6f, 0.6f}, {0.40f, 0.40f, 0.40f} };
-float search_level[3] = { 0.56f, 0.59f, 0.62f };
+float playouts_level[2][3] = { {600, 450, 250}, {320, 220, 100} };
+float temperature_level[2][3] = { {0.98f, 0.98f, 0.98f}, {0.40f, 0.40f, 0.40f} };
+float search_level[3] = { 0.60f, 0.80f, 1.00f };
 
 void sigint_handler(int signum)
 {
@@ -399,7 +399,6 @@ private:
 
 	int pos_id;
 	int pattern;
-	int pattern2;
 
 	Move best_move10 = Move::moveNone();
 
@@ -855,11 +854,21 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 	int child_win_count = 0;
 
 	max_value = max_value_nonoise = -FLT_MAX;
-	const float a = parent_color == Black ? -0.04f : 0.00f;
-	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, search_level[pos_id] + pattern2 * 0.04f + a) : sqrtf((float)sum);
-	const float c = parent == nullptr ?
+	const float sqrt_sum = sqrtf((float)sum);
+	float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
+	if (sum >= 50 && pos->turn() == Black) {
+		float kld_ = 0.0;
+		for (int i = 0; i < child_num; i++) {
+			const int move_count = uct_child[i].move_count;
+			if (move_count > 0) {
+				const float p = (float)move_count / sum;
+				kld_ += p * std::log(p / (uct_child[i].nnrate + FLT_EPSILON));
+			}
+		}
+		c += kld_ * search_level[pos_id] * 100.0f;
+	}
 	const float fpu_reduction = (parent == nullptr ? 0.0f : c_fpu_reduction) * sqrtf(current->visited_nnrate);
 	const float parent_q = sum_win > 0 ? std::max(0.0f, (float)(sum_win / sum) - fpu_reduction) : 0.0f;
 	const float init_u = sum == 0 ? 1.0f : sqrt_sum;
@@ -1068,15 +1077,14 @@ void UCTSearcher::Playout(visitor_t& visitor)
 
 
 				pos_id = (*mt_64)() % 3;
-				pattern = (*mt_64)() % 2;
-				pattern2 = (*mt_64)() % 2;
+				pattern = (*mt_64)() % 1;
 				best_move10 = Move::moveNone();
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
 				if (pos_id == 1) pos_root = new Position(DefaultStartPositionSFEN_4pieces, s.thisptr);
 				if (pos_id == 2) pos_root = new Position(DefaultStartPositionSFEN_6pieces, s.thisptr);
 				hcp = pos_root->toHuffmanCodedPos();
 				//setPosition(*pos_root, hcp);
-				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN());
+				//SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN());
 
 				records.clear();
 				reason = 0;
@@ -1256,7 +1264,7 @@ void UCTSearcher::NextStep()
 		int max_ = 0;
 		for (int i = 0; i < std::min<int>(5, child_num); i++) {
 			if (sorted_uct_childs[i]->move_count == 0) break;
-			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.5f - playouts_level[pattern][pos_id] * 0.006f), reciprocal_temperature);
+			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.5f - playouts_level[pattern][pos_id] * 0.01f), reciprocal_temperature);
 			probabilities.emplace_back(probability);
 			max_ = max(max_, sorted_uct_childs[i]->move_count);
 		}
@@ -1421,36 +1429,36 @@ void UCTSearcher::NextStep()
 					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pos_id:{} {} {} {} {} {} {} {}",
 						grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
 			}
-			if (ply == RANDOM_MOVE + 31) {
-				static int count_distribution2[2][3][7];
-				if (best_wp <= 0.2104) count_distribution2[pattern][pos_id][0]++;
-				if (0.2104 < best_wp && best_wp <= 0.3114) count_distribution2[pattern][pos_id][1]++; // -1000 ~ -600
-				if (0.3114 < best_wp && best_wp <= 0.4342) count_distribution2[pattern][pos_id][2]++; // -600 ~ -200
-				if (0.4342 < best_wp && best_wp <= 0.5658) count_distribution2[pattern][pos_id][3]++; // -200 ~ 200
-				if (0.5658 < best_wp && best_wp <= 0.6886) count_distribution2[pattern][pos_id][4]++;
-				if (0.6886 < best_wp && best_wp <= 0.7896) count_distribution2[pattern][pos_id][5]++;
-				if (0.7896 < best_wp) count_distribution2[pattern][pos_id][6]++;
-				int a[7];
-				for (int c = 0; c < 7; c++) a[c] = count_distribution2[pattern][pos_id][c];
-				if (grp->group_id <= 1)
-					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pattern:{} pos_id:{} {} {} {} {} {} {} {}",
-						grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pattern, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
-			}
-			if (ply == RANDOM_MOVE + 61) {
-				static int count_distribution3[2][3][7];
-				if (best_wp <= 0.2104) count_distribution3[pattern][pos_id][0]++;
-				if (0.2104 < best_wp && best_wp <= 0.3114) count_distribution3[pattern][pos_id][1]++; // -1000 ~ -600
-				if (0.3114 < best_wp && best_wp <= 0.4342) count_distribution3[pattern][pos_id][2]++; // -600 ~ -200
-				if (0.4342 < best_wp && best_wp <= 0.5658) count_distribution3[pattern][pos_id][3]++; // -200 ~ 200
-				if (0.5658 < best_wp && best_wp <= 0.6886) count_distribution3[pattern][pos_id][4]++;
-				if (0.6886 < best_wp && best_wp <= 0.7896) count_distribution3[pattern][pos_id][5]++;
-				if (0.7896 < best_wp) count_distribution3[pattern][pos_id][6]++;
-				int a[7];
-				for (int c = 0; c < 7; c++) a[c] = count_distribution3[pattern][pos_id][c];
-				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pattern:{} pos_id:{} {} {} {} {} {} {} {}",
-					grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pattern, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
-			}
-			if (grp->group_id == 0 && id == 0)
+			//if (ply == RANDOM_MOVE + 31) {
+			//	static int count_distribution2[2][3][7];
+			//	if (best_wp <= 0.2104) count_distribution2[pattern][pos_id][0]++;
+			//	if (0.2104 < best_wp && best_wp <= 0.3114) count_distribution2[pattern][pos_id][1]++; // -1000 ~ -600
+			//	if (0.3114 < best_wp && best_wp <= 0.4342) count_distribution2[pattern][pos_id][2]++; // -600 ~ -200
+			//	if (0.4342 < best_wp && best_wp <= 0.5658) count_distribution2[pattern][pos_id][3]++; // -200 ~ 200
+			//	if (0.5658 < best_wp && best_wp <= 0.6886) count_distribution2[pattern][pos_id][4]++;
+			//	if (0.6886 < best_wp && best_wp <= 0.7896) count_distribution2[pattern][pos_id][5]++;
+			//	if (0.7896 < best_wp) count_distribution2[pattern][pos_id][6]++;
+			//	int a[7];
+			//	for (int c = 0; c < 7; c++) a[c] = count_distribution2[pattern][pos_id][c];
+			//	if (grp->group_id <= 1)
+			//		SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pattern:{} pos_id:{} {} {} {} {} {} {} {}",
+			//			grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pattern, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+			//}
+			//if (ply == RANDOM_MOVE + 61) {
+			//	static int count_distribution3[2][3][7];
+			//	if (best_wp <= 0.2104) count_distribution3[pattern][pos_id][0]++;
+			//	if (0.2104 < best_wp && best_wp <= 0.3114) count_distribution3[pattern][pos_id][1]++; // -1000 ~ -600
+			//	if (0.3114 < best_wp && best_wp <= 0.4342) count_distribution3[pattern][pos_id][2]++; // -600 ~ -200
+			//	if (0.4342 < best_wp && best_wp <= 0.5658) count_distribution3[pattern][pos_id][3]++; // -200 ~ 200
+			//	if (0.5658 < best_wp && best_wp <= 0.6886) count_distribution3[pattern][pos_id][4]++;
+			//	if (0.6886 < best_wp && best_wp <= 0.7896) count_distribution3[pattern][pos_id][5]++;
+			//	if (0.7896 < best_wp) count_distribution3[pattern][pos_id][6]++;
+			//	int a[7];
+			//	for (int c = 0; c < 7; c++) a[c] = count_distribution3[pattern][pos_id][c];
+			//	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} winrate:{}: pattern:{} pos_id:{} {} {} {} {} {} {} {}",
+			//		grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_wp, pattern, pos_id, a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+			//}
+			if (grp->group_id == 0 && id < 16)
 				SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} {} bestmove:{} bestmove10:{} winrate:{}", grp->gpu_id, grp->group_id, id, ply, pos_root->toSFEN(), best_move.toUSI(), best_move10.toUSI(), best_wp);
 			best_move10 = Move::moveNone();
 			{
@@ -1556,12 +1564,15 @@ void UCTSearcher::NextGame()
 {
 	static int gameResult_count[2][3][3];
 	gameResult_count[pattern][pos_id][gameResult]++;
-	const float r = 0.001f;
+	//const float r = 0.001f;
+	const float r = 0.004f;
 	if (gameResult == WhiteWin) {
-		temperature_level[pattern][pos_id] -= r;
+		//temperature_level[pattern][pos_id] -= r;
+		playouts_level[pattern][pos_id] *= (1.0f + r);
 	}
 	if (gameResult == BlackWin) {
-		temperature_level[pattern][pos_id] += r;
+		//temperature_level[pattern][pos_id] += r;
+		playouts_level[pattern][pos_id] *= (1.0f - r);
 	}
 	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} gameResult:{} black_win:{} white_win:{} pattern:{} pos_id:{} playout_level:{}, temeperature_level:{}",
 		grp->gpu_id, grp->group_id, id, ply, gameResult, gameResult_count[pattern][pos_id][BlackWin], gameResult_count[pattern][pos_id][WhiteWin], pattern, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id]);
