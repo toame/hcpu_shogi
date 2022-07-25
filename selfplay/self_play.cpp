@@ -1273,7 +1273,7 @@ void UCTSearcher::NextStep()
 		int max_ = 0;
 		for (int i = 0; i < std::min<int>(5, child_num); i++) {
 			if (sorted_uct_childs[i]->move_count == 0) break;
-			const auto probability = std::pow(max(0.01f, sorted_uct_childs[i]->move_count - 1.5f - playouts_level[pattern][pos_id] * 0.01f), reciprocal_temperature);
+			const auto probability = std::pow(max(1e-7f, sorted_uct_childs[i]->move_count - 1.5f - playouts_level[pattern][pos_id] * 0.01f), reciprocal_temperature);
 			probabilities.emplace_back(probability);
 			max_ = max(max_, sorted_uct_childs[i]->move_count);
 		}
