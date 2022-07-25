@@ -44,7 +44,7 @@ volatile sig_atomic_t stopflg = false;
 
 float playouts_level[2][3] = { {600, 450, 250}, {320, 220, 100} };
 float temperature_level[2][3] = { {0.98f, 0.98f, 0.98f}, {0.40f, 0.40f, 0.40f} };
-float search_level[3] = { 0.60f, 0.80f, 1.00f };
+float search_level[3] = { 0.45f, 0.55f, 0.65f };
 
 void sigint_handler(int signum)
 {
@@ -867,7 +867,10 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 				kld_ += p * std::log(p / (uct_child[i].nnrate + FLT_EPSILON));
 			}
 		}
-		c += kld_ * search_level[pos_id] * 100.0f;
+		float add = 0.0f;
+		if (parent_color == White) add = 0.1f;
+		c += kld_ * (search_level[pos_id] + add) * 100.0f;
+		
 	}
 	const float fpu_reduction = (parent == nullptr ? 0.0f : c_fpu_reduction) * sqrtf(current->visited_nnrate);
 	const float parent_q = sum_win > 0 ? std::max(0.0f, (float)(sum_win / sum) - fpu_reduction) : 0.0f;
