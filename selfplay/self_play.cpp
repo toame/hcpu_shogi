@@ -25,7 +25,7 @@
 #include "cppshogi.h"
 
 #include "cxxopts/cxxopts.hpp"
-
+#define PATTERN_NUM (3)
 //#define SPDLOG_TRACE_ON
 #define SPDLOG_DEBUG_ON
 #define SPDLOG_EOL "\n"
@@ -41,10 +41,10 @@ constexpr int UCT_CHILD_MAX = 593;
 int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
-
-float playouts_level[2][3] = { {520, 380, 230}, {320, 220, 100} };
-float temperature_level[2][3] = { {0.95f, 0.95f, 0.95f}, {0.40f, 0.40f, 0.40f} };
-float search_level[2][3] = { {0.5f, 0.7f, 0.9f}, {0.8f, 1.0f, 1.2f} };
+float playouts_limit[3] = { 550, 350, 250 };
+float playouts_level[PATTERN_NUM][3] = { {40, 15, 8}, {60, 25, 12}, {90, 45, 20} };
+float temperature_level[PATTERN_NUM][3] = { {0.25f, 0.25f, 0.25f}, {0.40f, 0.40f, 0.40f}, {0.60f, 0.60f, 0.60f} };
+float search_level[PATTERN_NUM][3] = { {0.5f, 0.7f, 0.9f}, {0.8f, 1.0f, 1.2f} };
 
 void sigint_handler(int signum)
 {
@@ -860,7 +860,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 	float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
-	if (sum >= 50 && pos->turn() == Black) {
+	if (sum >= 50 && pos->turn() == Black && best_move10 != Move::moveNone()) {
 		float kld_ = 0.0;
 		for (int i = 0; i < child_num; i++) {
 			const int move_count = uct_child[i].move_count;
@@ -873,7 +873,6 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 		if (parent_color == White) add = search_level[1][pos_id];
 		else add = search_level[0][pos_id];
 		c += kld_ * add;
-		
 	}
 	const float fpu_reduction = (parent == nullptr ? 0.0f : c_fpu_reduction) * sqrtf(current->visited_nnrate);
 	const float parent_q = sum_win > 0 ? std::max(0.0f, (float)(sum_win / sum) - fpu_reduction) : 0.0f;
@@ -972,7 +971,7 @@ UCTSearcher::InterruptionCheck(const int playout_count, const int extension_time
 	int max_index = 0;
 	int max = 0, second = 0;
 	const int child_num = root_node->child_num;
-	int limit_playout = color == Black ? (int(playouts_level[pattern][pos_id] * 1.2 + 20)) : max_playout_num * 1.5;
+	int limit_playout = color == Black ? (int(playouts_limit[pos_id])) : max_playout_num * 1.5;
 	if (extension_times == 0) limit_playout = std::max(300, limit_playout);
 	limit_playout += child_num;
 	const int rest = limit_playout - playout_count;
@@ -990,6 +989,7 @@ UCTSearcher::InterruptionCheck(const int playout_count, const int extension_time
 		}
 	}
 	if (max <= 3) return false;
+
 
 	// 詰みが見つかった場合は探索を打ち切る
 	if (uct_child[max_index].IsLose())
@@ -1271,13 +1271,13 @@ void UCTSearcher::NextStep()
 		probabilities.reserve(child_num);
 		const float reciprocal_temperature = 1.0f / temperature_level[pattern][pos_id];
 		int max_ = 0;
-		for (int i = 0; i < std::min<int>(5, child_num); i++) {
+		for (int i = 0; i < std::min<int>(6, child_num); i++) {
 			if (sorted_uct_childs[i]->move_count == 0) break;
-			const auto probability = std::pow(max(1e-7f, sorted_uct_childs[i]->move_count - 1.5f - playouts_level[pattern][pos_id] * 0.01f), reciprocal_temperature);
+			const auto probability = std::pow(max(1e-7f, sorted_uct_childs[i]->move_count - 1.0f + sorted_uct_childs[i]->nnrate * 5), reciprocal_temperature);
 			probabilities.emplace_back(probability);
 			max_ = max(max_, sorted_uct_childs[i]->move_count);
 		}
-		if (max_ >= 5) {
+		if (max_ >= 2) {
 			discrete_distribution<unsigned int> dist(probabilities.begin(), probabilities.end());
 			const auto sorted_select_index = dist(*mt_64);
 			best_move10 = sorted_uct_childs[sorted_select_index]->move;
