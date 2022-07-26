@@ -1287,8 +1287,9 @@ void UCTSearcher::NextStep()
 			for (int i = 0; i < probabilities.size(); i++) {
 				if (grp->group_id == 0 && id == 0) {
 					const float win_rate = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
-					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} temperature:{} move:{} probability:{} winrate:{} {}",
-						grp->gpu_id, grp->group_id, id, ply, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(), probabilities[i], win_rate, sorted_select_index);
+					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {}",
+						grp->gpu_id, grp->group_id, id, ply, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(), 
+						probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index);
 				}
 			}
 		}
