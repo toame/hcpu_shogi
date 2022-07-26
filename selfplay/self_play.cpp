@@ -42,8 +42,8 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 float playouts_limit[3] = { 550, 350, 250 };
-float playouts_level[PATTERN_NUM][3] = { {60, 40, 22}, {90, 60, 35}, {170, 100, 55} };
-float temperature_level[PATTERN_NUM][3] = { {0.25f, 0.25f, 0.25f}, {0.40f, 0.40f, 0.40f}, {0.55f, 0.55f, 0.55f} };
+float playouts_level[PATTERN_NUM][3] = { {60, 35, 15}, {95, 47, 22}, {145, 75, 32} };
+float temperature_level[PATTERN_NUM][3] = { {0.30f, 0.30f, 0.30f}, {0.45f, 0.45f, 0.45f}, {0.60f, 0.60f, 0.60f} };
 float search_level[ColorNum][3] = { {1.0f, 1.5f, 2.0f}, {3.0f, 4.0f, 5.0f} };
 
 void sigint_handler(int signum)
