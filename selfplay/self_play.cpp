@@ -42,9 +42,9 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 float playouts_limit[3] = { 550, 350, 250 };
-float playouts_level[PATTERN_NUM][3] = { {40, 15, 8}, {60, 25, 12}, {90, 45, 20} };
-float temperature_level[PATTERN_NUM][3] = { {0.25f, 0.25f, 0.25f}, {0.40f, 0.40f, 0.40f}, {0.60f, 0.60f, 0.60f} };
-float search_level[PATTERN_NUM][3] = { {0.5f, 0.7f, 0.9f}, {0.8f, 1.0f, 1.2f} };
+float playouts_level[PATTERN_NUM][3] = { {40, 15, 8}, {60, 25, 13}, {90, 45, 20} };
+float temperature_level[PATTERN_NUM][3] = { {0.25f, 0.25f, 0.25f}, {0.40f, 0.40f, 0.40f}, {0.55f, 0.55f, 0.55f} };
+float search_level[ColorNum][3] = { {1.0f, 1.5f, 2.0f}, {3.0f, 4.0f, 5.0f} };
 
 void sigint_handler(int signum)
 {
@@ -399,6 +399,7 @@ private:
 
 	int pos_id;
 	int pattern;
+	float strength = 1.0;
 
 	std::string kif;
 
@@ -1083,7 +1084,8 @@ void UCTSearcher::Playout(visitor_t& visitor)
 
 
 				pos_id = (*mt_64)() % 3;
-				pattern = (*mt_64)() % 1;
+				pattern = (*mt_64)() % 3;
+				strength = 0.8f + ((*mt_64)() % 400) * 0.001f;
 				best_move10 = Move::moveNone();
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
 				if (pos_id == 1) pos_root = new Position(DefaultStartPositionSFEN_4pieces, s.thisptr);
@@ -1256,7 +1258,7 @@ void UCTSearcher::NextStep()
 	playout++;
 
 	// 低プレイアウト時の手を記録
-	if (playout >= int(playouts_level[pattern][pos_id] + root_node->child_num) && best_move10 == Move::moveNone()) {
+	if (playout >= int(playouts_level[pattern][pos_id] * strength + root_node->child_num) && best_move10 == Move::moveNone()) {
 		const child_node_t* uct_child = root_node->child.get();
 		const auto child_num = root_node->child_num;
 
@@ -1277,10 +1279,18 @@ void UCTSearcher::NextStep()
 			probabilities.emplace_back(probability);
 			max_ = max(max_, sorted_uct_childs[i]->move_count);
 		}
+		
 		if (max_ >= 2) {
 			discrete_distribution<unsigned int> dist(probabilities.begin(), probabilities.end());
 			const auto sorted_select_index = dist(*mt_64);
 			best_move10 = sorted_uct_childs[sorted_select_index]->move;
+			for (int i = 0; i < probabilities.size(); i++) {
+				if (grp->group_id == 0 && id == 0) {
+					const float win_rate = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
+					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} temperature:{} move:{} probability:{} winrate:{} {}",
+						grp->gpu_id, grp->group_id, id, ply, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(), probabilities[i], win_rate, sorted_select_index);
+				}
+			}
 		}
 	}
 
@@ -1577,12 +1587,12 @@ void UCTSearcher::NextGame()
 	const float r = 0.001f;
 	//const float r = 0.004f;
 	if (gameResult == WhiteWin) {
-		temperature_level[pattern][pos_id] -= r;
-		//playouts_level[pattern][pos_id] *= (1.0f + r);
+		//temperature_level[pattern][pos_id] -= r;
+		playouts_level[pattern][pos_id] *= (1.0f + r);
 	}
 	if (gameResult == BlackWin) {
-		temperature_level[pattern][pos_id] += r;
-		//playouts_level[pattern][pos_id] *= (1.0f - r);
+		//temperature_level[pattern][pos_id] += r;
+		playouts_level[pattern][pos_id] *= (1.0f - r);
 	}
 	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} gameResult:{} black_win:{} white_win:{} pattern:{} pos_id:{} playout_level:{}, temeperature_level:{}",
 		grp->gpu_id, grp->group_id, id, ply, gameResult, gameResult_count[pattern][pos_id][BlackWin], gameResult_count[pattern][pos_id][WhiteWin], pattern, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id]);
