@@ -918,7 +918,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 				max_child_nonoise = i;
 			}
 			// ランダムに確率を上げる
-			if ((rnd(*mt) < ROOT_NOISE && best_move10 != Move::moveNone()) || parent_color == White)
+			if (rnd(*mt) < ROOT_NOISE && (best_move10 != Move::moveNone() || parent_color == White))
 				rate = (rate + 1.0f) / 2.0f;
 		}
 
