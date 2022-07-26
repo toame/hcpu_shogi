@@ -42,7 +42,7 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 float playouts_limit[3] = { 550, 350, 250 };
-float playouts_level[PATTERN_NUM][3] = { {60, 30, 15}, {90, 50, 30}, {150, 80, 50} };
+float playouts_level[PATTERN_NUM][3] = { {65, 45, 25}, {100, 65, 40}, {190, 110, 60} };
 float temperature_level[PATTERN_NUM][3] = { {0.25f, 0.25f, 0.25f}, {0.40f, 0.40f, 0.40f}, {0.55f, 0.55f, 0.55f} };
 float search_level[ColorNum][3] = { {1.0f, 1.5f, 2.0f}, {3.0f, 4.0f, 5.0f} };
 
@@ -1586,7 +1586,7 @@ void UCTSearcher::NextGame()
 	static int gameResult_count[3][3][3];
 	gameResult_count[pattern][pos_id][gameResult]++;
 	//const float r = 0.001f;
-	const float r = 0.003f;
+	const float r = 0.0035f;
 	if (gameResult == WhiteWin) {
 		//temperature_level[pattern][pos_id] -= r;
 		playouts_level[pattern][pos_id] *= (1.0f + r);
