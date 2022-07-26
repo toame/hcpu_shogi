@@ -42,7 +42,7 @@ int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
 float playouts_limit[3] = { 550, 350, 250 };
-float playouts_level[PATTERN_NUM][3] = { {65, 45, 25}, {100, 65, 40}, {190, 110, 60} };
+float playouts_level[PATTERN_NUM][3] = { {60, 40, 22}, {90, 60, 35}, {170, 100, 55} };
 float temperature_level[PATTERN_NUM][3] = { {0.25f, 0.25f, 0.25f}, {0.40f, 0.40f, 0.40f}, {0.55f, 0.55f, 0.55f} };
 float search_level[ColorNum][3] = { {1.0f, 1.5f, 2.0f}, {3.0f, 4.0f, 5.0f} };
 
@@ -918,7 +918,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 				max_child_nonoise = i;
 			}
 			// ランダムに確率を上げる
-			if (rnd(*mt) < ROOT_NOISE)
+			if ((rnd(*mt) < ROOT_NOISE && best_move10 != Move::moveNone()) || parent_color == White)
 				rate = (rate + 1.0f) / 2.0f;
 		}
 
