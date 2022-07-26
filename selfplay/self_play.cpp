@@ -1583,7 +1583,7 @@ void UCTSearcher::NextPly(const Move move)
 
 void UCTSearcher::NextGame()
 {
-	static int gameResult_count[2][3][3];
+	static int gameResult_count[3][3][3];
 	gameResult_count[pattern][pos_id][gameResult]++;
 	//const float r = 0.001f;
 	const float r = 0.003f;
