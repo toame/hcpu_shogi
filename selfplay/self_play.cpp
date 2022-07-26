@@ -1085,7 +1085,7 @@ void UCTSearcher::Playout(visitor_t& visitor)
 
 				pos_id = (*mt_64)() % 3;
 				pattern = (*mt_64)() % 3;
-				strength = 0.8f + ((*mt_64)() % 400) * 0.001f;
+				strength = pow(2, - 0.4f + ((*mt_64)() % 81) * 0.01f);
 				best_move10 = Move::moveNone();
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
 				if (pos_id == 1) pos_root = new Position(DefaultStartPositionSFEN_4pieces, s.thisptr);
