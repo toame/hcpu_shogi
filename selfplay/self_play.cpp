@@ -1088,7 +1088,7 @@ void UCTSearcher::Playout(visitor_t& visitor)
 
 				pos_id = (*mt_64)() % 3;
 				pattern = (*mt_64)() % 2 + 1;
-				//pattern = 2;
+				pattern = 2;
 				strength = pow(2, -0.4f + ((*mt_64)() % 81) * 0.01f);
 				best_move10 = Move::moveNone();
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
@@ -1297,7 +1297,7 @@ void UCTSearcher::NextStep()
 					select_sum[pattern][pos_id][i]++;
 				if (grp->group_id == 0 && id < 8) {
 					const float win_rate = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
-					const float rate = select_count[pattern][pos_id][i] / (select_sum[pattern][pos_id][i] + FLT_EPSILON);
+					const float rate = select_count[pattern][pos_id][i] / (((float)select_sum[pattern][pos_id][i]) + FLT_EPSILON);
 					if (ply > RANDOM_MOVE && pos_root->turn() == Black)
 						SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} pos_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{} ({:.2f}%)",
 							grp->gpu_id, grp->group_id, id, ply, strength, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(),
