@@ -1290,9 +1290,11 @@ void UCTSearcher::NextStep()
 			best_move10 = sorted_uct_childs[sorted_select_index]->move;
 			static int select_count[PATTERN_NUM][3][4];
 			static int select_sum[PATTERN_NUM][3][4];
-			select_count[pattern][pos_id][sorted_select_index]++;
+			if (ply > RANDOM_MOVE && pos_root->turn() == Black)
+				select_count[pattern][pos_id][sorted_select_index]++;
 			for (int i = 0; i < probabilities.size(); i++) {
-				select_sum[pattern][pos_id][i]++;
+				if (ply > RANDOM_MOVE && pos_root->turn() == Black)
+					select_sum[pattern][pos_id][i]++;
 				if (grp->group_id == 0 && id == 0) {
 					const float win_rate = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
 					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{}",
