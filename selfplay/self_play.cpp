@@ -1288,12 +1288,16 @@ void UCTSearcher::NextStep()
 			discrete_distribution<unsigned int> dist(probabilities.begin(), probabilities.end());
 			const auto sorted_select_index = dist(*mt_64);
 			best_move10 = sorted_uct_childs[sorted_select_index]->move;
+			static int select_count[PATTERN_NUM][3][4];
+			static int select_sum[PATTERN_NUM][3][4];
+			select_count[pattern][pos_id][sorted_select_index]++;
 			for (int i = 0; i < probabilities.size(); i++) {
+				select_sum[pattern][pos_id][i]++;
 				if (grp->group_id == 0 && id == 0) {
 					const float win_rate = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
-					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {}",
+					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{}",
 						grp->gpu_id, grp->group_id, id, ply, strength, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(),
-						probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index);
+						probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index, select_count[pattern][pos_id][i], select_sum[pattern][pos_id][i]);
 				}
 			}
 		}
@@ -1590,7 +1594,7 @@ void UCTSearcher::NextGame()
 	static int gameResult_count[3][3][3];
 	gameResult_count[pattern][pos_id][gameResult]++;
 	//const float r = 0.001f;
-	const float r = 0.0035f;
+	const float r = 0.003f;
 	if (gameResult == WhiteWin) {
 		//temperature_level[pattern][pos_id] -= r;
 		playouts_level[pattern][pos_id] *= (1.0f + r);
@@ -1601,8 +1605,10 @@ void UCTSearcher::NextGame()
 	}
 	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} gameResult:{} black_win:{} white_win:{} pattern:{} pos_id:{} playout_level:{}, temeperature_level:{}",
 		grp->gpu_id, grp->group_id, id, ply, gameResult, gameResult_count[pattern][pos_id][BlackWin], gameResult_count[pattern][pos_id][WhiteWin], pattern, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id]);
-	if (grp->group_id == 0)
-		SPDLOG_DEBUG(logger, "pos_id:{} playout_level:{}, temeperature_level:{} {}", pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id], kif);
+	if (grp->group_id == 0 && gameResult == White)
+		SPDLOG_DEBUG(logger, "group_id:{} pos_id:{} playout_level:{}, temeperature_level:{} {}", grp->group_id, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id], kif);
+	if (grp->group_id == 1)
+		SPDLOG_DEBUG(logger, "group_id:{} pos_id:{} playout_level:{}, temeperature_level:{} {}", grp->group_id, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id], kif);
 
 
 	// 局面出力
