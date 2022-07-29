@@ -176,7 +176,7 @@ inline void visits_to_proberbility(TrainingData& data, const std::vector<MoveVis
 		double sum = 0;
 		for (size_t i = 0; i < candidates.size(); i++) {
 			const auto& moveVisits = candidates[i];
-			const auto new_visits = std::pow(std::max(0.001f, moveVisits.visitNum - 0.7f), 1.0 / temperature);
+			const auto new_visits = std::pow(std::max(0.001f, moveVisits.visitNum - 0.9f), 1.0 / temperature);
 			exponentiated_visits[i] = new_visits;
 			sum += new_visits;
 		}
@@ -246,7 +246,7 @@ size_t __load_hcpe3(const std::string& filepath, bool use_average, double a, dou
 			assert(moveInfo.candidateNum <= 593);
 
 			// candidateNum==0の手は読み飛ばす
-			if (moveInfo.candidateNum > 0 && mt() % 10 != 0) {
+			if (moveInfo.candidateNum > 0 && mt() % 11 != 0) {
 				candidates.resize(moveInfo.candidateNum);
 				ifs.read((char*)candidates.data(), sizeof(MoveVisits) * moveInfo.candidateNum);
 			}

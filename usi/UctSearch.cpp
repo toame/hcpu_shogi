@@ -1379,7 +1379,7 @@ UCTSearcher::UctSearch(Position *pos, child_node_t* parent, uct_node_t* current,
 		else {
 			// 詰みチェック
 			int isMate = 0;
-			if (!pos->inCheck()) {
+			if (!pos->inCheck() && pos->turn() == Black) {
 				if (mateMoveInOddPly<MATE_SEARCH_DEPTH, false>(*pos, draw_ply)) {
 					isMate = 1;
 				}
@@ -1388,7 +1388,7 @@ UCTSearcher::UctSearch(Position *pos, child_node_t* parent, uct_node_t* current,
 					isMate = 1;
 				}
 			}
-			else {
+			else if (pos->turn() == Black) {
 				if (mateMoveInOddPly<MATE_SEARCH_DEPTH, true>(*pos, draw_ply)) {
 					isMate = 1;
 				}
@@ -1499,23 +1499,36 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 	int child_win_count = 0;
 
 	max_value = -FLT_MAX;
-
-	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, search_param1) : sqrtf((float)sum);
-	const float c = parent == nullptr ?
+	
+	//const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, search_param1) : sqrtf((float)sum);
+	const float sqrt_sum = sqrtf((float)sum);
+	float kld_ = 0.0f;
+	if (sum > 50) {
+		for (int i = 0; i < child_num; i++) {
+			const int move_count = uct_child[i].move_count;
+			if (move_count > 0) {
+				const float p = (float)move_count / sum;
+				kld_ += p * std::log(p / (uct_child[i].nnrate + FLT_EPSILON));
+			}
+		}
+	}
+	float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
+
+
 	const float fpu_reduction = (parent == nullptr ? c_fpu_reduction_root : c_fpu_reduction) * sqrtf(current->visited_nnrate);
 	const float parent_q = sum_win > 0 ? std::max(0.0f, (float)(sum_win / sum) - fpu_reduction) : 0.0f;
 	const float init_u = sum == 0 ? 1.0f : sqrt_sum;
 
 	// UCB値最大の手を求める
 	for (int i = 0; i < child_num; i++) {
-		if (uct_child[i].IsWin()) {
-			child_win_count++;
-			// 負けが確定しているノードは選択しない
-			continue;
-		}
-		else if (uct_child[i].IsLose()) {
+		//if (uct_child[i].IsWin()) {
+		//	child_win_count++;
+		//	// 負けが確定しているノードは選択しない
+		//	continue;
+		//}
+		if (uct_child[i].IsLose()) {
 			// 子ノードに一つでも負けがあれば、自ノードを勝ちにできる
 			if (parent != nullptr)
 				parent->SetWin();
@@ -1525,7 +1538,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 		const WinType win = uct_child[i].win;
 		const int move_count = uct_child[i].move_count;
-
+		float kld = 0.0f;
 		if (move_count == 0) {
 			// 未探索のノードの価値に、親ノードの価値を使用する
 			q = parent_q;
@@ -1535,11 +1548,12 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 		else {
 			q = (float)(win / move_count);
 			u = sqrt_sum / (1 + move_count);
+			const float p = (float)move_count / sum;
+			kld = p * std::log(p / (uct_child[i].nnrate + FLT_EPSILON));
 		}
 
 		const float rate = uct_child[i].nnrate;
-
-		const float ucb_value = q + c * u * rate;
+		const float ucb_value = q + c * u * rate + ((sum >= 50 && pos->turn() == Black) ? -kld * search_param1 : 0);
 
 		if (ucb_value > max_value) {
 			max_value = ucb_value;
