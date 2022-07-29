@@ -1290,17 +1290,18 @@ void UCTSearcher::NextStep()
 			best_move10 = sorted_uct_childs[sorted_select_index]->move;
 			static int select_count[PATTERN_NUM][3][4];
 			static int select_sum[PATTERN_NUM][3][4];
-			if (ply > RANDOM_MOVE && pos_root->turn() == Black)
+			if (ply > RANDOM_MOVE && pos_root->turn() == Black && abs(sorted_uct_childs[0]->win / sorted_uct_childs[0]->move_count - 0.5f) < 0.42)
 				select_count[pattern][pos_id][sorted_select_index]++;
 			for (int i = 0; i < probabilities.size(); i++) {
 				if (ply > RANDOM_MOVE && pos_root->turn() == Black && abs(sorted_uct_childs[0]->win / sorted_uct_childs[0]->move_count - 0.5f) < 0.42f)
 					select_sum[pattern][pos_id][i]++;
 				if (grp->group_id == 0 && id < 8) {
 					const float win_rate = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
+					const float rate = select_count[pattern][pos_id][i] / (select_sum[pattern][pos_id][i] + FLT_EPSILON);
 					if (ply > RANDOM_MOVE && pos_root->turn() == Black)
-						SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{}",
+						SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} pos_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{} ({:.2f}%)",
 							grp->gpu_id, grp->group_id, id, ply, strength, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(),
-							probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index, select_count[pattern][pos_id][i], select_sum[pattern][pos_id][i]);
+							probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index, select_count[pattern][pos_id][i], select_sum[pattern][pos_id][i], rate * 100.0f);
 				}
 			}
 		}
