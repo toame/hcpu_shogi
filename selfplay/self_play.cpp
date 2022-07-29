@@ -1087,8 +1087,8 @@ void UCTSearcher::Playout(visitor_t& visitor)
 
 
 				pos_id = (*mt_64)() % 3;
-				pattern = (*mt_64)() % 3;
-				pattern = 2;
+				pattern = (*mt_64)() % 2 + 1;
+				//pattern = 2;
 				strength = pow(2, -0.4f + ((*mt_64)() % 81) * 0.01f);
 				best_move10 = Move::moveNone();
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
@@ -1293,13 +1293,14 @@ void UCTSearcher::NextStep()
 			if (ply > RANDOM_MOVE && pos_root->turn() == Black)
 				select_count[pattern][pos_id][sorted_select_index]++;
 			for (int i = 0; i < probabilities.size(); i++) {
-				if (ply > RANDOM_MOVE && pos_root->turn() == Black)
+				if (ply > RANDOM_MOVE && pos_root->turn() == Black && abs(sorted_uct_childs[0]->win / sorted_uct_childs[0]->move_count - 0.5f) < 0.42f)
 					select_sum[pattern][pos_id][i]++;
-				if (grp->group_id == 0 && id == 0) {
+				if (grp->group_id == 0 && id < 8) {
 					const float win_rate = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
-					SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{}",
-						grp->gpu_id, grp->group_id, id, ply, strength, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(),
-						probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index, select_count[pattern][pos_id][i], select_sum[pattern][pos_id][i]);
+					if (ply > RANDOM_MOVE && pos_root->turn() == Black)
+						SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{}",
+							grp->gpu_id, grp->group_id, id, ply, strength, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(),
+							probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index, select_count[pattern][pos_id][i], select_sum[pattern][pos_id][i]);
 				}
 			}
 		}
@@ -1607,7 +1608,7 @@ void UCTSearcher::NextGame()
 	}
 	SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} gameResult:{} black_win:{} white_win:{} pattern:{} pos_id:{} playout_level:{}, temeperature_level:{}",
 		grp->gpu_id, grp->group_id, id, ply, gameResult, gameResult_count[pattern][pos_id][BlackWin], gameResult_count[pattern][pos_id][WhiteWin], pattern, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id]);
-	if (grp->group_id == 0 && gameResult == White)
+	if (grp->group_id == 0 && gameResult == WhiteWin)
 		SPDLOG_DEBUG(logger, "group_id:{} pos_id:{} playout_level:{}, temeperature_level:{} {}", grp->group_id, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id], kif);
 	if (grp->group_id == 1)
 		SPDLOG_DEBUG(logger, "group_id:{} pos_id:{} playout_level:{}, temeperature_level:{} {}", grp->group_id, pos_id, playouts_level[pattern][pos_id], temperature_level[pattern][pos_id], kif);
