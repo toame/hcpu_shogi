@@ -1298,9 +1298,9 @@ void UCTSearcher::NextStep()
 				if (grp->group_id == 0 && id < 8) {
 					const float win_rate = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
 					if (ply > RANDOM_MOVE && pos_root->turn() == Black)
-						SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{}",
+						SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{} ({})",
 							grp->gpu_id, grp->group_id, id, ply, strength, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(),
-							probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index, select_count[pattern][pos_id][i], select_sum[pattern][pos_id][i]);
+							probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index, select_count[pattern][pos_id][i], select_sum[pattern][pos_id][i], (float)(select_count[pattern][pos_id][i]) / select_sum[pattern][pos_id][i]);
 				}
 			}
 		}
