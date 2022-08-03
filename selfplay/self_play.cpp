@@ -41,13 +41,13 @@ constexpr int UCT_CHILD_MAX = 593;
 int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
-float playouts_limit[3] = { 550, 350, 250 };
+float playouts_limit[3] = { 650, 550, 450 };
 //float playouts_level[PATTERN_NUM][3] = {{95, 59, 24}, {145, 88, 38}, {200, 145, 59} };
 //float temperature_level[PATTERN_NUM][3] = { {0.30f, 0.30f, 0.30f}, {0.45f, 0.45f, 0.45f}, {0.60f, 0.60f, 0.60f} };
 
-float playouts_level[PATTERN_NUM][3] = { {90, 55, 23}, {120, 80, 30}, {190, 120, 45} };
+float playouts_level[PATTERN_NUM][3] = { {90, 55, 23}, {130, 80, 30}, {190, 120, 45} };
 float temperature_level[PATTERN_NUM][3] = { {0.45f, 0.45f, 0.45f}, {0.60f, 0.60f, 0.60f}, {0.75f, 0.75f, 0.75f } };
-float search_level[ColorNum][3] = { {1.0f, 1.5f, 2.0f}, {3.0f, 4.5f, 6.0f} };
+float search_level[ColorNum][3] = { {0.02f, 0.025f, 0.03f}, {0.05f, 0.07f, 0.09f} };
 
 void sigint_handler(int signum)
 {
@@ -864,20 +864,9 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 	float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
-	if (sum >= 50 && pos->turn() == Black && best_move10 != Move::moveNone()) {
-		float kld_ = 0.0;
-		for (int i = 0; i < child_num; i++) {
-			const int move_count = uct_child[i].move_count;
-			if (move_count > 0) {
-				const float p = (float)move_count / sum;
-				kld_ += p * std::log(p / (uct_child[i].nnrate + FLT_EPSILON));
-			}
-		}
-		float add = 0.0f;
-		if (parent_color == White) add = search_level[1][pos_id];
-		else add = search_level[0][pos_id];
-		c += kld_ * add;
-	}
+
+	const float is_safe = sum >= 50 && pos->turn() == Black && best_move10 != Move::moveNone();
+	const float search_p = search_level[parent_color == White][pos_id];
 	const float fpu_reduction = (parent == nullptr ? 0.0f : c_fpu_reduction) * sqrtf(current->visited_nnrate);
 	const float parent_q = sum_win > 0 ? std::max(0.0f, (float)(sum_win / sum) - fpu_reduction) : 0.0f;
 	const float init_u = sum == 0 ? 1.0f : sqrt_sum;
@@ -899,7 +888,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 		const WinType win = uct_child[i].win;
 		const int move_count = uct_child[i].move_count;
-
+		float kld = 0.0f;
 		if (move_count == 0) {
 			// 未探索のノードの価値に、親ノードの価値を使用する
 			q = parent_q;
@@ -909,6 +898,8 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 		else {
 			q = (float)(win / move_count);
 			u = sqrt_sum / (1 + move_count);
+			const float p = (float)move_count / sum;
+			kld = p * std::log(p / (uct_child[i].nnrate + FLT_EPSILON));
 		}
 
 		float rate = uct_child[i].nnrate;
@@ -925,7 +916,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 				rate = (rate + 1.0f) / 2.0f;
 		}
 
-		const float ucb_value = q + c * u * rate;
+		const float ucb_value = q + c * u * rate + ((is_safe) ? -kld * search_p : 0);
 
 		if (ucb_value > max_value) {
 			max_value = ucb_value;
@@ -1088,7 +1079,7 @@ void UCTSearcher::Playout(visitor_t& visitor)
 
 				pos_id = (*mt_64)() % 3;
 				pattern = (*mt_64)() % 2 + 1;
-				pattern = 2;
+				pattern = 1;
 				strength = pow(2, -0.4f + ((*mt_64)() % 81) * 0.01f);
 				best_move10 = Move::moveNone();
 				if (pos_id == 0) pos_root = new Position(DefaultStartPositionSFEN_2pieces, s.thisptr);
@@ -1279,7 +1270,7 @@ void UCTSearcher::NextStep()
 		int max_ = 0;
 		for (int i = 0; i < std::min<int>(4, child_num); i++) {
 			if (sorted_uct_childs[i]->move_count == 0) break;
-			const auto probability = std::pow(max(1e-7f, sorted_uct_childs[i]->move_count - 1.0f + sorted_uct_childs[i]->nnrate * 5), reciprocal_temperature);
+			const auto probability = std::pow(max(1e-7f, sorted_uct_childs[i]->move_count - 1.5f + sorted_uct_childs[i]->nnrate * 6), reciprocal_temperature);
 			probabilities.emplace_back(probability);
 			max_ = max(max_, sorted_uct_childs[i]->move_count);
 		}
@@ -1358,9 +1349,9 @@ void UCTSearcher::NextStep()
 			probabilities.reserve(child_num);
 			//float temperature = std::max(0.1f, RANDOM_TEMPERATURE - RANDOM_TEMPERATURE_DROP * step);
 			int add;
-			if (pos_id == 0) add = ((pos_root->turn() == White) ? 7 : 0);
-			if (pos_id == 1) add = ((pos_root->turn() == White) ? 10 : -2);
-			if (pos_id == 2) add = ((pos_root->turn() == White) ? 14 : -6);
+			if (pos_id == 0) add = ((pos_root->turn() == White) ? 4 : 0);
+			if (pos_id == 1) add = ((pos_root->turn() == White) ? 6 : -1);
+			if (pos_id == 2) add = ((pos_root->turn() == White) ? 10 : -5);
 			float r = 22;
 			if (pos_id == 1 && pos_root->turn() == Black) r = 23;
 			if (pos_id == 2 && pos_root->turn() == Black) r = 27;
@@ -1597,7 +1588,7 @@ void UCTSearcher::NextGame()
 	static int gameResult_count[3][3][3];
 	gameResult_count[pattern][pos_id][gameResult]++;
 	//const float r = 0.001f;
-	const float r = 0.003f;
+	const float r = 0.0025f;
 	if (gameResult == WhiteWin) {
 		//temperature_level[pattern][pos_id] -= r;
 		playouts_level[pattern][pos_id] *= (1.0f + r);
@@ -1812,7 +1803,7 @@ int main(int argc, char* argv[]) {
 			("c_base_root", "UCT parameter c_base_root", cxxopts::value<float>(c_base_root)->default_value("39470.0"), "val")
 			("temperature", "Softmax temperature", cxxopts::value<float>(temperature)->default_value("1.66"), "val")
 			("reuse", "reuse sub tree", cxxopts::value<bool>(REUSE_SUBTREE)->default_value("false"))
-			("nn_cache_size", "nn cache size", cxxopts::value<unsigned int>(nn_cache_size)->default_value("8388608"))
+			("nn_cache_size", "nn cache size", cxxopts::value<unsigned int>(nn_cache_size)->default_value("4194304"))
 			("split_opponent", "split opponent's hcpe3", cxxopts::value<bool>(SPLIT_OPPONENT)->default_value("false"))
 			("out_min_hcp", "output minimum move hcp", cxxopts::value<bool>(OUT_MIN_HCP)->default_value("false"))
 			("usi_engine", "USIEngine exe path", cxxopts::value<std::string>(usi_engine_path))
