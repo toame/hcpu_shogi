@@ -45,9 +45,9 @@ float playouts_limit[3] = { 650, 550, 450 };
 //float playouts_level[PATTERN_NUM][3] = {{95, 59, 24}, {145, 88, 38}, {200, 145, 59} };
 //float temperature_level[PATTERN_NUM][3] = { {0.30f, 0.30f, 0.30f}, {0.45f, 0.45f, 0.45f}, {0.60f, 0.60f, 0.60f} };
 
-float playouts_level[PATTERN_NUM][3] = { {90, 55, 23}, {130, 80, 30}, {190, 120, 45} };
-float temperature_level[PATTERN_NUM][3] = { {0.45f, 0.45f, 0.45f}, {0.60f, 0.60f, 0.60f}, {0.75f, 0.75f, 0.75f } };
-float search_level[ColorNum][3] = { {0.02f, 0.025f, 0.03f}, {0.05f, 0.07f, 0.09f} };
+float playouts_level[PATTERN_NUM][3] = { {90, 55, 23}, {150, 70, 25}, {190, 120, 45} };
+float temperature_level[PATTERN_NUM][3] = { {0.45f, 0.45f, 0.45f}, {0.55f, 0.60f, 0.60f}, {0.75f, 0.75f, 0.75f } };
+float search_level[ColorNum][3] = { {0.04f, 0.06f, 0.08f}, {0.07f, 0.09f, 0.11f} };
 
 void sigint_handler(int signum)
 {
@@ -903,7 +903,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 		}
 
 		float rate = uct_child[i].nnrate;
-		if (parent_color == White) rate = uct_child[i].nnrate2;
+		if (parent_color == White || parent != nullptr) rate = uct_child[i].nnrate2;
 		if (parent == nullptr) {
 			const float ucb_value_nonoise = q + c * u * rate;
 			// ノイズがない場合の選択
@@ -1270,7 +1270,7 @@ void UCTSearcher::NextStep()
 		int max_ = 0;
 		for (int i = 0; i < std::min<int>(4, child_num); i++) {
 			if (sorted_uct_childs[i]->move_count == 0) break;
-			const auto probability = std::pow(max(1e-7f, sorted_uct_childs[i]->move_count - 1.5f + sorted_uct_childs[i]->nnrate * 6), reciprocal_temperature);
+			const auto probability = std::pow(max(1e-7f, sorted_uct_childs[i]->move_count - 1.8f + sorted_uct_childs[i]->nnrate * 6), reciprocal_temperature);
 			probabilities.emplace_back(probability);
 			max_ = max(max_, sorted_uct_childs[i]->move_count);
 		}
@@ -1588,7 +1588,7 @@ void UCTSearcher::NextGame()
 	static int gameResult_count[3][3][3];
 	gameResult_count[pattern][pos_id][gameResult]++;
 	//const float r = 0.001f;
-	const float r = 0.0025f;
+	const float r = 0.001f;
 	if (gameResult == WhiteWin) {
 		//temperature_level[pattern][pos_id] -= r;
 		playouts_level[pattern][pos_id] *= (1.0f + r);
@@ -1799,7 +1799,7 @@ int main(int argc, char* argv[]) {
 			("c_init", "UCT parameter c_init", cxxopts::value<float>(c_init)->default_value("1.49"), "val")
 			("c_base", "UCT parameter c_base", cxxopts::value<float>(c_base)->default_value("39470.0"), "val")
 			("c_fpu_reduction", "UCT parameter c_fpu_reduction", cxxopts::value<float>(c_fpu_reduction)->default_value("20"), "val")
-			("c_init_root", "UCT parameter c_init_root", cxxopts::value<float>(c_init_root)->default_value("1.49"), "val")
+			("c_init_root", "UCT parameter c_init_root", cxxopts::value<float>(c_init_root)->default_value("1.59"), "val")
 			("c_base_root", "UCT parameter c_base_root", cxxopts::value<float>(c_base_root)->default_value("39470.0"), "val")
 			("temperature", "Softmax temperature", cxxopts::value<float>(temperature)->default_value("1.66"), "val")
 			("reuse", "reuse sub tree", cxxopts::value<bool>(REUSE_SUBTREE)->default_value("false"))
