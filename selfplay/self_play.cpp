@@ -48,6 +48,17 @@ float playouts_limit[3] = { 650, 550, 450 };
 float playouts_level[PATTERN_NUM][3] = { {90, 55, 23}, {150, 70, 25}, {190, 120, 45} };
 float temperature_level[PATTERN_NUM][3] = { {0.45f, 0.45f, 0.45f}, {0.55f, 0.60f, 0.60f}, {0.75f, 0.75f, 0.75f } };
 float search_level[ColorNum][3] = { {0.04f, 0.06f, 0.08f}, {0.07f, 0.09f, 0.11f} };
+void random_dirichlet(std::mt19937_64& mt, std::vector<float>& x, const float alpha) {
+	std::gamma_distribution<float> gamma(alpha, 1.0);
+
+	float sum_y = 0;
+	for (int i = 0; i < x.size(); i++) {
+		float y = gamma(mt);
+		sum_y += y;
+		x[i] = y;
+	}
+	std::for_each(x.begin(), x.end(), [sum_y](float& v) { v /= sum_y; });
+}
 
 void sigint_handler(int signum)
 {
@@ -903,6 +914,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 		}
 
 		float rate = uct_child[i].nnrate;
+		float noise_rate = parent == nullptr ? uct_child[i].nnrate * 0.75f + 0.25f * uct_child[i].noise : uct_child[i].nnrate;
 		if (parent_color == White || parent != nullptr) rate = uct_child[i].nnrate2;
 		if (parent == nullptr) {
 			const float ucb_value_nonoise = q + c * u * rate;
@@ -916,7 +928,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 				rate = (rate + 1.0f) / 2.0f;
 		}
 
-		const float ucb_value = q + c * u * rate + ((is_safe) ? -kld * search_p : 0);
+		const float ucb_value = (parent_color == Black && best_move10 == Move::moveNone()) ? q + c * u * rate : q + c * u * noise_rate - kld * search_p;
 
 		if (ucb_value > max_value) {
 			max_value = ucb_value;
@@ -1130,6 +1142,12 @@ void UCTSearcher::Playout(visitor_t& visitor)
 			// ノイズ回数初期化
 			noise_count.resize(root_node->child_num);
 			std::fill(noise_count.begin(), noise_count.end(), 0);
+			vector<float> v_noise(root_node->child_num);
+			random_dirichlet(*mt_64, v_noise, 0.15f);
+			for (int i = 0; i < root_node->child_num; i++) {
+				root_node->child[i].noise = v_noise[i];
+			}
+
 
 			// 詰みのチェック
 			if (root_node->child_num == 0) {
@@ -1289,9 +1307,9 @@ void UCTSearcher::NextStep()
 				if (grp->group_id == 0 && id < 8) {
 					const float win_rate = sorted_uct_childs[i]->win / sorted_uct_childs[i]->move_count;
 					if (ply > RANDOM_MOVE && pos_root->turn() == Black)
-						SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} winrate:{} {} {}/{} ({})",
+						SPDLOG_DEBUG(logger, "gpu_id:{} group_id:{} id:{} ply:{} strength:{} temperature:{} move:{} probability:{} move_count:{} nnrate:{} nnrate_noise:{} winrate:{} {} {}/{} ({})",
 							grp->gpu_id, grp->group_id, id, ply, strength, temperature_level[pattern][pos_id], sorted_uct_childs[i]->move.toUSI(),
-							probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, win_rate, sorted_select_index, select_count[pattern][pos_id][i], select_sum[pattern][pos_id][i], (float)(select_count[pattern][pos_id][i]) / select_sum[pattern][pos_id][i]);
+							probabilities[i], sorted_uct_childs[i]->move_count, sorted_uct_childs[i]->nnrate, sorted_uct_childs[i]->nnrate * 0.75f + sorted_uct_childs[i]->noise * 0.25f, win_rate, sorted_select_index, select_count[pattern][pos_id][i], select_sum[pattern][pos_id][i], (float)(select_count[pattern][pos_id][i]) / select_sum[pattern][pos_id][i]);
 				}
 			}
 		}
