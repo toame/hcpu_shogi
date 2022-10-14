@@ -41,7 +41,7 @@ float alpha_d = 0.75f;
 int threads = 2;
 
 volatile sig_atomic_t stopflg = false;
-float playouts_limit[3] = { 800, 700, 600 };
+float playouts_limit[3] = { 750, 700, 650 };
 //float playouts_level[PATTERN_NUM][3] = {{95, 59, 24}, {145, 88, 38}, {200, 145, 59} };
 //float temperature_level[PATTERN_NUM][3] = { {0.30f, 0.30f, 0.30f}, {0.45f, 0.45f, 0.45f}, {0.60f, 0.60f, 0.60f} };
 
@@ -83,6 +83,8 @@ float RANDOM2 = 0;
 int MIN_MOVE;
 // ルートの方策に加えるノイズの確率(千分率)
 int ROOT_NOISE;
+
+int WINRATE_COUNT;
 
 // 終局とする勝率の閾値
 float WINRATE_THRESHOLD;
@@ -920,11 +922,11 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 		float noise_rate = parent == nullptr ? uct_child[i].nnrate * alpha_d + (1.0f - alpha_d) * uct_child[i].noise : uct_child[i].nnrate;
 		if (parent_color == White || parent != nullptr) rate = uct_child[i].nnrate2;
 		if (pos_id == 2 && ply <= 24 && uct_child[i].move.pieceTypeTo() == Pawn && uct_child[i].move.from() == SQ17 && uct_child[i].move.to() == SQ16) {
-			rate *= 0.2f;
-			noise_rate *= 0.2f;
+			rate *= 0.1f;
+			noise_rate *= 0.1f;
 		}
-		const float ucb_value = (parent_color == Black && best_move10 == Move::moveNone()) ? q + c * u * rate : q + (c + search_p) * u * noise_rate;
-
+		float ucb_value = (parent_color == Black && best_move10 == Move::moveNone()) ? q + c * u * rate : q + (c + search_p) * u * noise_rate;
+		ucb_value -= (parent == nullptr && parent_color == Black && best_move10 != Move::moveNone()) ? FastLog(1.0 + move_count / 256.0) * 0.01f : 0.0f;
 		if (ucb_value > max_value) {
 			max_value = ucb_value;
 			max_child = i;
@@ -1509,7 +1511,7 @@ void UCTSearcher::NextStep()
 				const float winrate = (best_wp - 0.5f) * 2.0f;
 				if (WINRATE_THRESHOLD < abs(winrate)) {
 					winrate_count += 1;
-					if (winrate_count >= 6) {
+					if (winrate_count >= WINRATE_COUNT) {
 						if (pos_root->turn() == Black)
 							gameResult = (winrate < 0 ? WhiteWin : BlackWin);
 						else
@@ -1821,6 +1823,7 @@ int main(int argc, char* argv[]) {
 			("random2", "random2", cxxopts::value<float>(RANDOM2)->default_value("0"))
 			("min_move", "minimum move number", cxxopts::value<int>(MIN_MOVE)->default_value("10"), "num")
 			("max_move", "maximum move number", cxxopts::value<int>(MAX_MOVE)->default_value("384"), "num")
+			("winrate_count", "winrate_count", cxxopts::value<int>(WINRATE_COUNT)->default_value("7"), "num")
 			("2mai_playout1", "playout_level1", cxxopts::value<float>(playouts_level[0][0])->default_value("75"), "num")
 			("4mai_playout1", "playout_level1", cxxopts::value<float>(playouts_level[0][1])->default_value("40"), "num")
 			("6mai_playout1", "playout_level1", cxxopts::value<float>(playouts_level[0][2])->default_value("12"), "num")
