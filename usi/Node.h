@@ -31,19 +31,21 @@ constexpr int NOT_EXPANDED = -1;
 
 struct uct_node_t;
 struct child_node_t {
-	child_node_t() : move_count(0), win((WinType)0), nnrate(0.0f), nnrate2(0.0f) {}
+	child_node_t() : move_count(0), win((WinType)0), win2((WinType)-1), nnrate(0.0f), nnrate2(0.0f), noise(0.0f) {}
 	child_node_t(const Move move)
-		: move(move), move_count(0), win((WinType)0), nnrate(0.0f), nnrate2(0.0f) {}
+		: move(move), move_count(0), win((WinType)0), win2((WinType)-1), nnrate(0.0f), nnrate2(0.0f), noise(0.0f) {}
 	// ムーブコンストラクタ
 	child_node_t(child_node_t&& o) noexcept
-		: move(o.move), move_count((int)o.move_count), win((WinType)o.win), nnrate(o.nnrate), nnrate2(o.nnrate2) {}
+		: move(o.move), move_count((int)o.move_count), win((WinType)o.win), win2((WinType)o.win2),  nnrate(o.nnrate), nnrate2(o.nnrate2), noise(o.noise) {}
 	// ムーブ代入演算子
 	child_node_t& operator=(child_node_t&& o) noexcept {
 		move = o.move;
 		move_count = (int)o.move_count;
 		win = (WinType)o.win;
+		win2 = (WinType)o.win2;
 		nnrate = (float)o.nnrate;
 		nnrate2 = (float)o.nnrate2;
+		noise = (float)o.noise;
 		return *this;
 	}
 
@@ -58,8 +60,10 @@ struct child_node_t {
 	Move move;                   // 着手する座標
 	float nnrate;                // ニューラルネットワークでのレート
 	float nnrate2;               // ニューラルネットワークでのレート
+	float noise;
 	atomic_t<int> move_count; // 探索回数
 	atomic_t<WinType> win;    // 勝った回数
+	float win2;    // 勝った回数
 };
 
 struct uct_node_t {
