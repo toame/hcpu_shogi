@@ -47,7 +47,7 @@ float playouts_limit[3] = { 750, 700, 650 };
 
 float playouts_level[PATTERN_NUM][3] = { {75, 40, 12}, {140, 70, 20}, {190, 120, 45} };
 float temperature_level[PATTERN_NUM][3] = { {0.25f, 0.25f, 0.40f}, {0.53f, 0.53f, 0.59f}, {0.75f, 0.75f, 0.75f } };
-float search_level[ColorNum][3] = { {0.020f, 0.030f, 0.045f}, {0.035f, 0.045f, 0.060f} };
+float search_level[ColorNum][3] = { {0.15f, 0.20f, 0.40f}, {0.20f, 0.30f, 0.60f} };
 void random_dirichlet(std::mt19937_64& mt, std::vector<float>& x, const float alpha) {
 	std::gamma_distribution<float> gamma(alpha, 1.0);
 

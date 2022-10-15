@@ -269,3 +269,4 @@ ModelManifest.xml
 /dlshogi/*.pth
 /dlshogi/*.kif
 /dlshogi/*.bat
+/dlshogi/*.hcp
