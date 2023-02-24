@@ -92,7 +92,7 @@ void OptionsMap::init(Searcher* s) {
     (*this)["UCT_Threads6"]                = USIOption(0, 0, 256);
     (*this)["UCT_Threads7"]                = USIOption(0, 0, 256);
     (*this)["UCT_Threads8"]                = USIOption(0, 0, 256);
-    (*this)["DNN_Model"]                   = USIOption(R"(model.onnx)");
+    (*this)["DNN_Model"]                   = USIOption(R"(model_20230224.onnx)");
     (*this)["DNN_Model2"]                  = USIOption("");
     (*this)["DNN_Model3"]                  = USIOption("");
     (*this)["DNN_Model4"]                  = USIOption("");
@@ -108,7 +108,7 @@ void OptionsMap::init(Searcher* s) {
     (*this)["DNN_Batch_Size6"]             = USIOption(0, 0, 256);
     (*this)["DNN_Batch_Size7"]             = USIOption(0, 0, 256);
     (*this)["DNN_Batch_Size8"]             = USIOption(0, 0, 256);
-    (*this)["Softmax_Temperature"]         = USIOption(174, 1, 500);
+    (*this)["Softmax_Temperature"]         = USIOption(140, 1, 500);
     (*this)["search_param1"]               = USIOption(100, 0, 1000);
     (*this)["Mate_Root_Search"]            = USIOption(33, 0, 37);
 #ifdef PV_MATE_SEARCH
@@ -130,10 +130,10 @@ void OptionsMap::init(Searcher* s) {
     (*this)["DfPn_Min_Search_Millisecs"]   = USIOption(300, 0, INT_MAX);
     (*this)["ReuseSubtree"]                = USIOption(true);
     (*this)["Eval_Coef"]                   = USIOption(756, 1, 10000);
-    (*this)["Random_Ply"]                  = USIOption(0, 0, 1000);
-    (*this)["Random_Temperature"]          = USIOption(10000, 0, 100000);
-    (*this)["Random_Temperature_Drop"]     = USIOption(1000, 0, 100000);
-    (*this)["Random_Cutoff"]               = USIOption(15, 0, 1000);
+    (*this)["Random_Ply"]                  = USIOption(24, 0, 1000);
+    (*this)["Random_Temperature"]          = USIOption(4000, 0, 100000);
+    (*this)["Random_Temperature_Drop"]     = USIOption(200, 0, 100000);
+    (*this)["Random_Cutoff"]               = USIOption(10, 0, 1000);
     (*this)["Random_Cutoff_Drop"]          = USIOption(0, 0, 1000);
 #ifdef MAKE_BOOK
     (*this)["PV_Interval"]                 = USIOption(0, 0, INT_MAX);
@@ -152,9 +152,9 @@ void OptionsMap::init(Searcher* s) {
 #endif // !MAKE_BOOK
     (*this)["DebugMessage"]                = USIOption(false);
 #ifdef NDEBUG
-    (*this)["Engine_Name"]                 = USIOption("dlshogi");
+    (*this)["Engine_Name"]                 = USIOption("HCPU_SHOGI");
 #else
-    (*this)["Engine_Name"]                 = USIOption("dlshogi Debug Build");
+    (*this)["Engine_Name"]                 = USIOption("hcpu_shogi Debug Build");
 #endif
 }
 
