@@ -152,7 +152,7 @@ void OptionsMap::init(Searcher* s) {
 #endif // !MAKE_BOOK
     (*this)["DebugMessage"]                = USIOption(false);
 #ifdef NDEBUG
-    (*this)["Engine_Name"]                 = USIOption("HCPU_SHOGI_202");
+    (*this)["Engine_Name"]                 = USIOption("HCPU_SHOGI_20230224");
 #else
     (*this)["Engine_Name"]                 = USIOption("hcpu_shogi Debug Build");
 #endif
