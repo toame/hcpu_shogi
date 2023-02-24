@@ -1500,8 +1500,8 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 	max_value = -FLT_MAX;
 	
-	//const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, black_expect_failed_param) : sqrtf((float)sum);
-	const float sqrt_sum = sqrtf((float)sum);
+	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, black_expect_failed_param) : sqrtf((float)sum);
+	//const float sqrt_sum = sqrtf((float)sum);
 	float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
