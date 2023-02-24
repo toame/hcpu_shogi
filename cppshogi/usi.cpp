@@ -109,7 +109,7 @@ void OptionsMap::init(Searcher* s) {
     (*this)["DNN_Batch_Size7"]             = USIOption(0, 0, 256);
     (*this)["DNN_Batch_Size8"]             = USIOption(0, 0, 256);
     (*this)["Softmax_Temperature"]         = USIOption(140, 1, 500);
-    (*this)["search_param1"]               = USIOption(100, 0, 1000);
+    (*this)["black_expect_lossed_param"]               = USIOption(600, 500, 1000);
     (*this)["Mate_Root_Search"]            = USIOption(33, 0, 37);
 #ifdef PV_MATE_SEARCH
     (*this)["PV_Mate_Search_Threads"]      = USIOption(0, 0, 256);
@@ -152,7 +152,7 @@ void OptionsMap::init(Searcher* s) {
 #endif // !MAKE_BOOK
     (*this)["DebugMessage"]                = USIOption(false);
 #ifdef NDEBUG
-    (*this)["Engine_Name"]                 = USIOption("HCPU_SHOGI");
+    (*this)["Engine_Name"]                 = USIOption("HCPU_SHOGI_202");
 #else
     (*this)["Engine_Name"]                 = USIOption("hcpu_shogi Debug Build");
 #endif

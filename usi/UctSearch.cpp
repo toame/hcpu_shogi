@@ -127,7 +127,7 @@ float c_fpu_reduction;
 float c_init_root;
 float c_base_root;
 float c_fpu_reduction_root;
-float search_param1;
+float black_expect_failed_param;
 
 // モデルのパス
 string model_path[max_gpu];
@@ -1500,8 +1500,8 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 	max_value = -FLT_MAX;
 	
-	//const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, search_param1) : sqrtf((float)sum);
-	const float sqrt_sum = sqrtf((float)sum);
+	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, black_expect_failed_param) : sqrtf((float)sum);
+	//const float sqrt_sum = sqrtf((float)sum);
 	float kld_ = 0.0f;
 	if (sum > 50) {
 		for (int i = 0; i < child_num; i++) {
@@ -1553,7 +1553,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 		}
 
 		const float rate = uct_child[i].nnrate;
-		const float ucb_value = q + c * u * rate + ((sum >= 50 && pos->turn() == Black) ? -kld * search_param1 : 0);
+		const float ucb_value = q + c * u * rate;
 
 		if (ucb_value > max_value) {
 			max_value = ucb_value;

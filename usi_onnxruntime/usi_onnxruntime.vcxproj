@@ -67,7 +67,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>.\;..\usi;..\cppshogi;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <TargetName>dlshogi_onnxruntime</TargetName>
+    <TargetName>hcpushogi_onnxruntime</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_WinTypeDouble|x64'">
     <LinkIncremental>false</LinkIncremental>

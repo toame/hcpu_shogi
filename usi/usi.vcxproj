@@ -108,7 +108,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>C:\TensorRT-8.4.1.5\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6\include;..\cppshogi;$(IncludePath)</IncludePath>
     <LibraryPath>C:\TensorRT-8.4.1.5\lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6\lib\x64;$(LibraryPath)</LibraryPath>
-    <TargetName>dlshogi_tensorrt</TargetName>
+    <TargetName>hcpushogi_tensorrt</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_WinTypeDouble|x64'">
     <LinkIncremental>false</LinkIncremental>
