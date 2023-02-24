@@ -127,7 +127,7 @@ float c_fpu_reduction;
 float c_init_root;
 float c_base_root;
 float c_fpu_reduction_root;
-float black_expect_failed_param;
+float black_expect_lossed_param;
 
 // モデルのパス
 string model_path[max_gpu];
@@ -1500,7 +1500,7 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 	max_value = -FLT_MAX;
 	
-	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, black_expect_failed_param) : sqrtf((float)sum);
+	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, black_expect_lossed_param) : sqrtf((float)sum);
 	//const float sqrt_sum = sqrtf((float)sum);
 	float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :

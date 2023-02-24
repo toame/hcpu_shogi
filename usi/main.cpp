@@ -206,7 +206,7 @@ void MySearcher::doUSICommandLoop(int argc, char* argv[]) {
 			c_init_root = options["C_init_root"] / 100.0f;
 			c_base_root = (float)options["C_base_root"];
 			c_fpu_reduction_root = options["C_fpu_reduction_root"] / 100.0f;
-			black_expect_failed_param = options["black_expect_failed_param"] / 1000.0f;
+			black_expect_lossed_param = options["black_expect_lossed_param"] / 1000.0f;
 			SetReuseSubtree(options["ReuseSubtree"]);
 			SetPvInterval(options["PV_Interval"]);
 			SetMultiPV(options["MultiPV"]);

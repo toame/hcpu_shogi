@@ -23,7 +23,7 @@ extern float c_fpu_reduction;
 extern float c_init_root;
 extern float c_base_root;
 extern float c_fpu_reduction_root;
-extern float black_expect_failed_param;
+extern float black_expect_lossed_param;
 
 struct po_info_t {
 	int halt;  // 探索を打ち切る回数
