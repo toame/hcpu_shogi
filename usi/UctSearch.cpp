@@ -1500,18 +1500,8 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 	max_value = -FLT_MAX;
 	
-	const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, black_expect_failed_param) : sqrtf((float)sum);
-	//const float sqrt_sum = sqrtf((float)sum);
-	float kld_ = 0.0f;
-	if (sum > 50) {
-		for (int i = 0; i < child_num; i++) {
-			const int move_count = uct_child[i].move_count;
-			if (move_count > 0) {
-				const float p = (float)move_count / sum;
-				kld_ += p * std::log(p / (uct_child[i].nnrate + FLT_EPSILON));
-			}
-		}
-	}
+	//const float sqrt_sum = (pos->turn() == Black) ? powf((float)sum, black_expect_failed_param) : sqrtf((float)sum);
+	const float sqrt_sum = sqrtf((float)sum);
 	float c = parent == nullptr ?
 		FastLog((sum + c_base_root + 1.0f) / c_base_root) + c_init_root :
 		FastLog((sum + c_base + 1.0f) / c_base) + c_init;
@@ -1538,18 +1528,14 @@ UCTSearcher::SelectMaxUcbChild(Position* pos, child_node_t* parent, uct_node_t* 
 
 		const WinType win = uct_child[i].win;
 		const int move_count = uct_child[i].move_count;
-		float kld = 0.0f;
 		if (move_count == 0) {
 			// 未探索のノードの価値に、親ノードの価値を使用する
 			q = parent_q;
 			u = init_u;
-			//if (parent == nullptr) q = 1.0;
 		}
 		else {
 			q = (float)(win / move_count);
 			u = sqrt_sum / (1 + move_count);
-			const float p = (float)move_count / sum;
-			kld = p * std::log(p / (uct_child[i].nnrate + FLT_EPSILON));
 		}
 
 		const float rate = uct_child[i].nnrate;
